@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { doc, getDoc, updateDoc, arrayRemove, deleteDoc, collection, getDocs, writeBatch } from 'firebase/firestore'
+import { doc, getDoc, updateDoc, arrayRemove, collection, getDocs, writeBatch } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
 import imageCompression from 'browser-image-compression'
 import { db, storage } from '../config/firebase'
@@ -93,7 +93,7 @@ const EditGroupPage = () => {
     setCoverSaving(true)
     try {
       const storageRef = ref(storage, `groups/${id}/cover/${Date.now()}.jpg`)
-      const snapshot = await uploadBytes(storageRef, blob, { contentType: 'image/jpeg' })
+      const snapshot = await uploadBytes(storageRef, blob, { contentType: 'image/jpeg', cacheControl: 'public, max-age=31536000, immutable' })
       const coverUrl = await getDownloadURL(snapshot.ref)
       await updateDoc(doc(db, 'groups', id), { coverUrl })
       await deleteOldCover(group.coverUrl)

@@ -97,7 +97,6 @@ const GroupPage = () => {
   const total = expenses.reduce((sum, e) => sum + e.amount, 0)
 
   const handleExportCSV = () => {
-    const currencySymbol = getCurrency(group.baseCurrency).symbol
     const header = ['日期', '標題', '類別', '付款人', `原始金額`, '幣別', `換算金額(${group.baseCurrency})`, '分帳方式', '備註']
     const rows = [...expenses].reverse().map(e => {
       const date = e.createdAt?.toDate
@@ -235,6 +234,7 @@ const GroupPage = () => {
         {group.coverUrl ? (
           <>
             <img
+              ref={el => { if (el?.complete && el.naturalWidth) setLoadedCover(group.coverUrl) }}
               src={group.coverUrl}
               alt=""
               onLoad={() => setLoadedCover(group.coverUrl)}
