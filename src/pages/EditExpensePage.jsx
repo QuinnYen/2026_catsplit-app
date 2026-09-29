@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { doc, collection, getDoc, getDocs, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { CheckCircle2, Trash2 } from 'lucide-react'
 import { db, storage } from '../config/firebase'
 import imageCompression from 'browser-image-compression'
@@ -11,6 +11,7 @@ import { DEFAULT_CATEGORIES } from '../config/expenseForm'
 import PawDecor from '../components/PawDecor'
 import useExchangeRate from '../hooks/useExchangeRate'
 import { toLocalDateStr, computeSplits, applyExchangeRate, computeMemberBalances } from '../utils/expenseHelpers'
+import { deleteFileByUrl } from '../utils/storageCleanup'
 
 const EditExpensePage = () => {
   const { id, expenseId } = useParams()
@@ -165,10 +166,12 @@ const EditExpensePage = () => {
       const ext = receiptFile.type === 'image/png' ? 'png' : 'jpg'
       const storageRef = ref(storage, `receipts/${id}/${expenseId}/${Date.now()}.${ext}`)
       const snapshot = await uploadBytes(storageRef, compressed, { contentType: compressed.type || 'image/jpeg' })
-      return { receiptUrl: await getDownloadURL(snapshot.ref) }
+      const receiptUrl = await getDownloadURL(snapshot.ref)
+      await deleteFileByUrl(existingReceiptUrl)
+      return { receiptUrl }
     }
     if (removeExistingReceipt && existingReceiptUrl) {
-      try { await deleteObject(ref(storage, existingReceiptUrl)) } catch { /* 檔案可能已不存在，忽略 */ }
+      await deleteFileByUrl(existingReceiptUrl)
       return { receiptUrl: null }
     }
     return {}
@@ -212,6 +215,7 @@ const EditExpensePage = () => {
     setLoading(true)
     try {
       await deleteDoc(doc(db, 'groups', id, 'expenses', expenseId))
+      await deleteFileByUrl(existingReceiptUrl)
       await recomputeAndSaveBalances()
       navigate(`/group/${id}`)
     } catch (error) {

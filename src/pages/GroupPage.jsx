@@ -11,6 +11,7 @@ import GroupIcon from '../components/GroupIcon'
 import PawDecor from '../components/PawDecor'
 import { getCurrency } from '../config/currencies'
 import { computeMemberBalances, matchExpense } from '../utils/expenseHelpers'
+import { deleteFileByUrl } from '../utils/storageCleanup'
 
 const GroupPage = () => {
   const { id } = useParams()
@@ -67,7 +68,9 @@ const GroupPage = () => {
     if (!window.confirm('確定要刪除這筆支出嗎？')) return
     setOpenMenuId(null)
     try {
+      const receiptUrl = expenses.find(e => e.id === expenseId)?.receiptUrl
       await deleteDoc(doc(db, 'groups', id, 'expenses', expenseId))
+      await deleteFileByUrl(receiptUrl)
       const [expSnap, setSnap] = await Promise.all([
         getDocs(collection(db, 'groups', id, 'expenses')),
         getDocs(collection(db, 'groups', id, 'settlements')),

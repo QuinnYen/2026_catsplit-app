@@ -9,6 +9,7 @@ import Avatar from '../components/Avatar'
 import GroupIconPicker from '../components/GroupIconPicker'
 import CropModal from '../components/CropModal'
 import PawDecor from '../components/PawDecor'
+import { deleteGroupFiles } from '../utils/storageCleanup'
 
 const EditGroupPage = () => {
   const { id } = useParams()
@@ -138,6 +139,7 @@ const EditGroupPage = () => {
     if (!confirm(`確定刪除「${group.name}」？此操作無法復原，所有支出紀錄將一併刪除。`)) return
     setDeleting(true)
     try {
+      await deleteGroupFiles(id)
       const [expensesSnap, settlementsSnap] = await Promise.all([
         getDocs(collection(db, 'groups', id, 'expenses')),
         getDocs(collection(db, 'groups', id, 'settlements')),
