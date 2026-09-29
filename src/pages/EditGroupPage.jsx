@@ -382,20 +382,6 @@ const EditGroupPage = () => {
           )}
         </div>
 
-        {/* 封存群組（建立者） */}
-        {isCreator && (
-          <button
-            onClick={handleArchiveToggle}
-            disabled={archiving}
-            style={{
-              width: '100%', padding: '14px 0', borderRadius: 16, border: '1px solid #f0d5c0', background: '#fff',
-              color: archiving ? '#b08060' : '#FF8C42', fontSize: 14, fontWeight: 500, cursor: archiving ? 'not-allowed' : 'pointer',
-            }}
-          >
-            {archiving ? '處理中...' : group.archived ? '取消封存群組' : '封存群組'}
-          </button>
-        )}
-
         {/* 退出群組（非建立者） */}
         {!isCreator && (
           <button
@@ -410,18 +396,30 @@ const EditGroupPage = () => {
           </button>
         )}
 
-        {/* 刪除群組（建立者） */}
+        {/* 封存 / 刪除群組（建立者） */}
         {isCreator && (
-          <button
-            onClick={handleDeleteGroup}
-            disabled={deleting}
-            style={{
-              width: '100%', padding: '14px 0', borderRadius: 16, border: '1px solid #ffcdd2', background: '#fff',
-              color: deleting ? '#b08060' : '#e57373', fontSize: 14, fontWeight: 500, cursor: deleting ? 'not-allowed' : 'pointer',
-            }}
-          >
-            {deleting ? '刪除中...' : '刪除群組'}
-          </button>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button
+              onClick={handleArchiveToggle}
+              disabled={archiving}
+              style={{
+                flex: 1, padding: '14px 0', borderRadius: 16, border: '1px solid #f0d5c0', background: '#fff',
+                color: archiving ? '#b08060' : '#FF8C42', fontSize: 14, fontWeight: 500, cursor: archiving ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {archiving ? '處理中...' : group.archived ? '取消封存' : '封存'}
+            </button>
+            <button
+              onClick={handleDeleteGroup}
+              disabled={deleting}
+              style={{
+                flex: 1, padding: '14px 0', borderRadius: 16, border: '1px solid #ffcdd2', background: '#fff',
+                color: deleting ? '#b08060' : '#e57373', fontSize: 14, fontWeight: 500, cursor: deleting ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {deleting ? '刪除中...' : '刪除'}
+            </button>
+          </div>
         )}
 
       </div>
