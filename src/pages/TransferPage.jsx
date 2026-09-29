@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { CheckCircle2 } from 'lucide-react'
 import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, increment } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import { useApp } from '../context/AppContext'
@@ -179,7 +180,11 @@ const TransferPage = () => {
             color: '#fff', transition: 'all 0.15s',
           }}
         >
-          {loading ? '記錄中...' : '✅ 確認已轉帳'}
+          {loading ? '記錄中...' : (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <CheckCircle2 size={16} /> 確認已轉帳
+            </span>
+          )}
         </button>
       </div>
 

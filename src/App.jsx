@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useApp } from './context/AppContext'
+import catLogo from './assets/cat-logo.webp'
 
 import HomePage from './pages/HomePage'
 import CreateGroupPage from './pages/CreateGroupPage'
@@ -15,7 +16,7 @@ import AuthCallbackPage from './pages/AuthCallbackPage'
 const LoadingScreen = () => (
   <div className="flex items-center justify-center h-screen bg-gray-50">
     <div className="text-center">
-      <div className="text-4xl mb-4">🐱</div>
+      <img src={catLogo} alt="CatSplit" style={{ width: 64, height: 64, marginBottom: 16 }} />
       <p className="text-gray-500">載入中...</p>
     </div>
   </div>
@@ -23,7 +24,7 @@ const LoadingScreen = () => (
 
 const LoginScreen = ({ onLogin }) => (
   <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #fff8f4 0%, #ffe8d6 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px' }}>
-    <div style={{ fontSize: 80, marginBottom: 16, lineHeight: 1 }}>🐱</div>
+    <img src={catLogo} alt="CatSplit" style={{ width: 120, height: 120, marginBottom: 16 }} />
     <div style={{ fontSize: 24, fontWeight: 700, color: '#3d2b1f', marginBottom: 8 }}>CatSplit</div>
     <div style={{ fontSize: 14, color: '#b08060', marginBottom: 48, textAlign: 'center', lineHeight: 1.6 }}>
       貓咪幫你分帳，輕鬆搞定朋友借錢

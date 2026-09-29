@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
+import { Users, Wallet, Calculator, Check } from 'lucide-react'
 import { db } from '../config/firebase'
 import { useApp } from '../context/AppContext'
 import TabBar from '../components/TabBar'
 import Avatar from '../components/Avatar'
-import { getCurrency } from '../config/currencies' 
+import { getCurrency } from '../config/currencies'
+import catLogo from '../assets/cat-logo.webp'
 
 const HomePage = () => {
   const { user, loading: authLoading, loginWithLine, logout } = useApp()
@@ -52,9 +54,7 @@ const HomePage = () => {
 
           {/* Logo / Icon */}
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
-            <div style={{ width: 80, height: 80, borderRadius: 24, background: 'linear-gradient(135deg, #FF8C42 0%, #FF6B1A 100%)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 44, marginBottom: 16, boxShadow: '0 8px 24px rgba(255,107,26,0.25)' }}>
-              🐱
-            </div>
+            <img src={catLogo} alt="CatSplit" style={{ width: 80, height: 80, borderRadius: 24, marginBottom: 16, boxShadow: '0 8px 24px rgba(255,107,26,0.25)' }} />
             <div style={{ fontSize: 26, fontWeight: 700, color: '#3d2b1f', marginBottom: 6 }}>CatSplit</div>
             <div style={{ fontSize: 14, color: '#b08060', lineHeight: 1.6 }}>
               和朋友一起分攤費用<br />簡單記帳，輕鬆結算
@@ -64,12 +64,12 @@ const HomePage = () => {
           {/* 特色說明 */}
           <div style={{ background: '#fff', borderRadius: 16, border: '0.5px solid #f0d5c0', padding: '16px 18px', marginBottom: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
             {[
-              { icon: '👥', text: '建立群組，邀請朋友加入' },
-              { icon: '💰', text: '多幣別支出，自動換算' },
-              { icon: '🧮', text: '智慧分帳，最少轉帳次數' },
-            ].map(({ icon, text }) => (
+              { Icon: Users, text: '建立群組，邀請朋友加入' },
+              { Icon: Wallet, text: '多幣別支出，自動換算' },
+              { Icon: Calculator, text: '智慧分帳，最少轉帳次數' },
+            ].map(({ Icon, text }) => (
               <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ fontSize: 22, width: 32, textAlign: 'center', flexShrink: 0 }}>{icon}</div>
+                <div style={{ width: 32, display: 'flex', justifyContent: 'center', flexShrink: 0 }}><Icon size={20} color="#FF8C42" /></div>
                 <div style={{ fontSize: 13, color: '#5a3e2b' }}>{text}</div>
               </div>
             ))}
@@ -200,7 +200,11 @@ const HomePage = () => {
                 ) : (
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 500, color: isSettled ? '#b08060' : isPositive ? '#4caf50' : '#FF6B1A' }}>
-                      {isSettled ? '✓ 結清' : isPositive
+                      {isSettled ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                          <Check size={13} strokeWidth={3} /> 結清
+                        </span>
+                      ) : isPositive
                         ? `+${getCurrency(group.baseCurrency).symbol} ${Math.round(bal).toLocaleString()}`
                         : `${getCurrency(group.baseCurrency).symbol} ${Math.round(bal).toLocaleString()}`}
                     </div>

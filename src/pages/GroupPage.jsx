@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { doc, collection, onSnapshot, orderBy, query, deleteDoc, getDocs, updateDoc, arrayUnion } from 'firebase/firestore'
 
+import { Check, Plus, Calculator, X, Receipt, Search, Banknote, Trash2, Pencil, MoreVertical } from 'lucide-react'
 import { db } from '../config/firebase'
 import { useApp } from '../context/AppContext'
 import TabBar from '../components/TabBar'
@@ -132,7 +133,7 @@ const GroupPage = () => {
       navigator.share({ title: `${group?.emoji} ${group?.name}`, text: `${user?.name} 邀請你加入 CatSplit 分帳群組！`, url })
     } else {
       navigator.clipboard.writeText(url)
-      alert('邀請連結已複製！\n貼到 LINE 傳給朋友吧 😄')
+      alert('邀請連結已複製！\n貼到 LINE 傳給朋友吧')
     }
   }
 
@@ -190,7 +191,7 @@ const GroupPage = () => {
                 <div style={{ fontSize: 14, fontWeight: 500, color: '#3d2b1f' }}>{user?.name}</div>
                 <div style={{ fontSize: 12, color: '#b08060', marginTop: 2 }}>LINE 帳號</div>
               </div>
-              <div style={{ marginLeft: 'auto', color: '#FF8C42', fontSize: 18 }}>✓</div>
+              <Check size={18} color="#FF8C42" strokeWidth={3} style={{ marginLeft: 'auto', flexShrink: 0 }} />
             </div>
           </div>
           <div style={{ flex: 1 }} />
@@ -298,7 +299,7 @@ const GroupPage = () => {
             onTouchStart={e => e.currentTarget.style.transform = 'scale(0.97)'}
             onTouchEnd={e => e.currentTarget.style.transform = 'scale(1)'}
           >
-            <div style={{ fontSize: 24, marginBottom: 4 }}>➕</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}><Plus size={24} color="#FF8C42" /></div>
             <div style={{ fontSize: 13, fontWeight: 500, color: '#3d2b1f' }}>新增支出</div>
           </button>
           <button
@@ -307,7 +308,7 @@ const GroupPage = () => {
             onTouchStart={e => e.currentTarget.style.transform = 'scale(0.97)'}
             onTouchEnd={e => e.currentTarget.style.transform = 'scale(1)'}
           >
-            <div style={{ fontSize: 24, marginBottom: 4 }}>🧮</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}><Calculator size={24} color="#FF8C42" /></div>
             <div style={{ fontSize: 13, fontWeight: 500, color: '#3d2b1f' }}>結算</div>
           </button>
         </div>
@@ -317,9 +318,9 @@ const GroupPage = () => {
           {activeCategory && (
             <button
               onClick={() => setActiveCategory(null)}
-              style={{ fontSize: 11, color: '#FF8C42', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              style={{ fontSize: 11, color: '#FF8C42', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 3 }}
             >
-              清除篩選 ✕
+              清除篩選 <X size={11} strokeWidth={3} />
             </button>
           )}
         </div>
@@ -359,7 +360,7 @@ const GroupPage = () => {
 
         {!loading && expenses.length === 0 && settlements.length === 0 && (
           <div style={{ textAlign: 'center', padding: '48px 0' }}>
-            <div style={{ fontSize: 48, marginBottom: 12 }}>🧾</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}><Receipt size={48} color="#e0c4b0" /></div>
             <div style={{ color: '#b08060', fontSize: 14, marginBottom: 4 }}>還沒有任何支出</div>
             <div style={{ color: '#c4a882', fontSize: 13 }}>點上方新增第一筆吧！</div>
           </div>
@@ -372,7 +373,7 @@ const GroupPage = () => {
 
           if (activeCategory && filteredExpenses.length === 0) return (
             <div style={{ textAlign: 'center', padding: '48px 0' }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}><Search size={40} color="#e0c4b0" /></div>
               <div style={{ color: '#b08060', fontSize: 14 }}>此類別沒有支出</div>
             </div>
           )
@@ -421,8 +422,8 @@ const GroupPage = () => {
                             key={item.id}
                             style={{ background: '#f0faf0', borderRadius: 14, border: '0.5px solid #c8e6c9', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}
                           >
-                            <div style={{ width: 40, height: 40, background: '#e8f5e9', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
-                              💸
+                            <div style={{ width: 40, height: 40, background: '#e8f5e9', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              <Banknote size={20} color="#4caf50" />
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontSize: 13, fontWeight: 500, color: '#2e7d32', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -439,9 +440,9 @@ const GroupPage = () => {
                             </div>
                             <button
                               onClick={() => handleDeleteSettlement(item.id, group)}
-                              style={{ background: '#ffebee', border: 'none', borderRadius: 8, padding: '6px 8px', fontSize: 14, cursor: 'pointer', flexShrink: 0, color: '#e53935' }}
+                              style={{ background: '#ffebee', border: 'none', borderRadius: 8, padding: '6px 8px', cursor: 'pointer', flexShrink: 0, color: '#e53935', display: 'flex', alignItems: 'center' }}
                             >
-                              🗑️
+                              <Trash2 size={14} />
                             </button>
                           </div>
                         )
@@ -479,9 +480,9 @@ const GroupPage = () => {
                             </div>
                             <button
                               onClick={e => { e.stopPropagation(); setOpenMenuId(isMenuOpen ? null : item.id) }}
-                              style={{ background: 'none', border: 'none', padding: '4px 6px', cursor: 'pointer', fontSize: 18, color: '#c4a882', flexShrink: 0, lineHeight: 1 }}
+                              style={{ background: 'none', border: 'none', padding: '4px 6px', cursor: 'pointer', color: '#c4a882', flexShrink: 0, display: 'flex', alignItems: 'center' }}
                             >
-                              ⋮
+                              <MoreVertical size={18} />
                             </button>
                           </div>
 
@@ -498,14 +499,14 @@ const GroupPage = () => {
                                   onClick={e => { e.stopPropagation(); setOpenMenuId(null); navigate(`/group/${id}/expense/${item.id}/edit`) }}
                                   style={{ width: '100%', padding: '12px 16px', background: 'none', border: 'none', textAlign: 'left', fontSize: 14, color: '#3d2b1f', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
                                 >
-                                  ✏️ 編輯
+                                  <Pencil size={14} /> 編輯
                                 </button>
                                 <div style={{ height: '0.5px', background: '#f0d5c0' }} />
                                 <button
                                   onClick={e => { e.stopPropagation(); handleDeleteExpense(item.id) }}
                                   style={{ width: '100%', padding: '12px 16px', background: 'none', border: 'none', textAlign: 'left', fontSize: 14, color: '#e53935', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
                                 >
-                                  🗑️ 刪除
+                                  <Trash2 size={14} /> 刪除
                                 </button>
                               </div>
                             </>

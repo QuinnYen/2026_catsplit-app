@@ -1,3 +1,4 @@
+import { Check, Camera } from 'lucide-react'
 import Avatar from './Avatar'
 import { CURRENCIES, getCurrency } from '../config/currencies'
 import { todayStr } from '../utils/expenseHelpers'
@@ -42,7 +43,7 @@ const Checkbox = ({ checked }) => (
     background: checked ? '#FF8C42' : 'transparent',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   }}>
-    {checked && <span style={{ color: '#fff', fontSize: 12, lineHeight: 1 }}>✓</span>}
+    {checked && <Check size={12} color="#fff" strokeWidth={3} />}
   </div>
 )
 
@@ -206,7 +207,7 @@ const ExpenseForm = ({
             >
               <Avatar src={profile.avatar} name={profile.name} size={32} />
               <span style={{ fontSize: 14, color: '#3d2b1f', fontWeight: paidBy === uid ? 500 : 400, flex: 1, textAlign: 'left' }}>{profile.name}</span>
-              {paidBy === uid && <span style={{ color: '#FF8C42', fontSize: 16 }}>✓</span>}
+              {paidBy === uid && <Check size={16} color="#FF8C42" strokeWidth={3} />}
             </button>
           ))}
         </div>
@@ -422,7 +423,7 @@ const ExpenseForm = ({
               gap: 6, padding: '20px 0', borderRadius: 10, cursor: 'pointer',
               border: '1.5px dashed #f0d5c0', background: '#fff8f4', color: '#b08060',
             }}>
-              <span style={{ fontSize: 28 }}>📷</span>
+              <Camera size={28} color="#b08060" />
               <span style={{ fontSize: 13 }}>點擊上傳收據照片</span>
               <span style={{ fontSize: 11, color: '#c4a882' }}>自動壓縮，省流量</span>
               <input
@@ -461,7 +462,7 @@ const ExpenseForm = ({
             background: shareToLine ? '#06C755' : 'transparent',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            {shareToLine && <span style={{ color: '#fff', fontSize: 12, lineHeight: 1 }}>✓</span>}
+            {shareToLine && <Check size={12} color="#fff" strokeWidth={3} />}
           </div>
           <svg width="18" height="18" viewBox="0 0 22 22" fill="none" style={{ flexShrink: 0 }}>
             <path d="M11 2C6.03 2 2 5.58 2 10c0 3.54 2.56 6.57 6.24 7.73-.09.31-.56 1.97-.64 2.27 0 0-.04.14.07.19.11.06.24.01.24.01.32-.04 3.72-2.45 4.09-2.7.66.09 1.34.14 2.03.14 4.97 0 9-3.58 9-8s-4.03-8-9-8z" fill={shareToLine ? '#06C755' : '#b08060'} />

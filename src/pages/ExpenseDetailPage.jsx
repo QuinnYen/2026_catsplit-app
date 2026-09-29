@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { doc, getDoc } from 'firebase/firestore'
+import { HandCoins, Banknote } from 'lucide-react'
 import { db } from '../config/firebase'
 import { useApp } from '../context/AppContext'
 import Avatar from '../components/Avatar'
@@ -204,7 +205,7 @@ const ExpenseDetailPage = () => {
                 ).toLocaleString()}
               </div>
             </div>
-            <div style={{ fontSize: 32 }}>{user?.uid === expense.paidBy ? '💚' : '💸'}</div>
+            <div>{user?.uid === expense.paidBy ? <HandCoins size={32} color="#4caf50" /> : <Banknote size={32} color="#FF6B1A" />}</div>
           </div>
         )}
 

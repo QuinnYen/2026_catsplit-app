@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { doc, collection, getDoc, getDocs } from 'firebase/firestore'
+import { AlertTriangle, Check, CheckCircle2, PartyPopper } from 'lucide-react'
 import { db } from '../config/firebase'
 import { useApp } from '../context/AppContext'
 import TabBar from '../components/TabBar'
@@ -152,8 +153,8 @@ const SettlePage = () => {
           </div>
 
           {displayCurrency !== baseCurrency && (
-            <div style={{ fontSize: 11, color: '#c4a882', marginBottom: 10 }}>
-              ⚠️ 以即時匯率換算僅供參考，實際金額以 {getCurrency(baseCurrency).symbol} {baseCurrency} 為準
+            <div style={{ fontSize: 11, color: '#c4a882', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <AlertTriangle size={12} style={{ flexShrink: 0 }} /> 以即時匯率換算僅供參考，實際金額以 {getCurrency(baseCurrency).symbol} {baseCurrency} 為準
             </div>
           )}
 
@@ -200,7 +201,11 @@ const SettlePage = () => {
                     fontSize: 13, fontWeight: 500, flexShrink: 0,
                     color: diff > 0.01 ? '#4caf50' : diff < -0.01 ? '#FF6B1A' : '#b08060'
                   }}>
-                    {diff > 0.01 ? `+${fmt(diff)}` : diff < -0.01 ? fmt(diff) : '✓ 結清'}
+                    {diff > 0.01 ? `+${fmt(diff)}` : diff < -0.01 ? fmt(diff) : (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                        <Check size={13} strokeWidth={3} /> 結清
+                      </span>
+                    )}
                   </div>
                 </div>
               )
@@ -214,7 +219,7 @@ const SettlePage = () => {
 
           {settlements.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '24px 0' }}>
-              <div style={{ fontSize: 48, marginBottom: 8 }}>🎉</div>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}><PartyPopper size={48} color="#FF8C42" /></div>
               <div style={{ fontSize: 15, fontWeight: 500, color: '#3d2b1f', marginBottom: 4 }}>大家都結清了！</div>
               <div style={{ fontSize: 13, color: '#b08060' }}>不需要任何轉帳</div>
             </div>
@@ -265,7 +270,7 @@ const SettlePage = () => {
                 const to = group.memberProfiles?.[s.to]
                 return (
                   <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: '0.5px solid #f5e8dc' }}>
-                    <span style={{ fontSize: 16 }}>✅</span>
+                    <CheckCircle2 size={16} color="#4caf50" style={{ flexShrink: 0 }} />
                     <div style={{ flex: 1, fontSize: 12, color: '#b08060' }}>
                       <span style={{ color: '#3d2b1f', fontWeight: 500 }}>{from?.name}</span>
                       {' 轉給 '}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { doc, collection, getDoc, getDocs, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
+import { CheckCircle2, Trash2 } from 'lucide-react'
 import { db, storage } from '../config/firebase'
 import imageCompression from 'browser-image-compression'
 import { useApp } from '../context/AppContext'
@@ -276,7 +277,11 @@ const EditExpensePage = () => {
             background: isValid() && !loading ? '#FF8C42' : '#e0c4b0', color: '#fff',
           }}
         >
-          {loading ? '儲存中...' : '✅ 儲存變更'}
+          {loading ? '儲存中...' : (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <CheckCircle2 size={16} /> 儲存變更
+            </span>
+          )}
         </button>
 
         <button
@@ -288,7 +293,11 @@ const EditExpensePage = () => {
             background: '#fff', color: '#e53935',
           }}
         >
-          {loading ? '處理中...' : '🗑️ 刪除此筆支出'}
+          {loading ? '處理中...' : (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Trash2 size={16} /> 刪除此筆支出
+            </span>
+          )}
         </button>
       </div>
 

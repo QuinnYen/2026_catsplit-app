@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { collection, addDoc, Timestamp, doc, getDoc, updateDoc, increment } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { CheckCircle2 } from 'lucide-react'
 import { db, storage } from '../config/firebase'
 import { useApp } from '../context/AppContext'
 import TabBar from '../components/TabBar'
@@ -265,7 +266,11 @@ const AddExpensePage = () => {
             background: isValid() && !loading ? '#FF8C42' : '#e0c4b0', color: '#fff',
           }}
         >
-          {loading ? '新增中...' : '✅ 確認新增'}
+          {loading ? '新增中...' : (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <CheckCircle2 size={16} /> 確認新增
+            </span>
+          )}
         </button>
       </div>
 
