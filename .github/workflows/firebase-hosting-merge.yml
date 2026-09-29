@@ -28,8 +28,10 @@ jobs:
           channelId: live
           projectId: catsplit-app
       - run: npm ci --prefix functions
-      - uses: w9jds/firebase-action@master
+      - id: auth
+        uses: google-github-actions/auth@v2
         with:
-          args: deploy --only functions --project catsplit-app
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CATSPLIT_APP }}
+      - run: npx firebase-tools deploy --only functions --project catsplit-app
         env:
-          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CATSPLIT_APP }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
