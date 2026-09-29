@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { doc, getDoc, updateDoc, arrayRemove, deleteDoc, collection, getDocs, writeBatch } from 'firebase/firestore'
-import { db } from '../config/firebase'
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
+import imageCompression from 'browser-image-compression'
+import { db, storage } from '../config/firebase'
 import { useApp } from '../context/AppContext'
 import Avatar from '../components/Avatar'
 import GroupIconPicker from '../components/GroupIconPicker'
+import CropModal, { COVER_ASPECT } from '../components/CropModal'
 import PawDecor from '../components/PawDecor'
 
 const EditGroupPage = () => {
@@ -15,6 +18,8 @@ const EditGroupPage = () => {
   const [name, setName] = useState('')
   const [saving, setSaving] = useState(false)
   const [iconSaving, setIconSaving] = useState(false)
+  const [cropSrc, setCropSrc] = useState(null)
+  const [coverSaving, setCoverSaving] = useState(false)
   const [removingUid, setRemovingUid] = useState(null)
   const [renamingUid, setRenamingUid] = useState(null)
   const [renameInput, setRenameInput] = useState('')
@@ -54,6 +59,62 @@ const EditGroupPage = () => {
       console.error('更新圖示失敗', error)
     }
     setIconSaving(false)
+  }
+
+  const closeCrop = () => {
+    if (cropSrc) URL.revokeObjectURL(cropSrc)
+    setCropSrc(null)
+  }
+
+  const handleCoverFile = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !file.type.startsWith('image/')) return
+    try {
+      // 先縮小，避免相機原圖過大塞爆 canvas；同時修正 EXIF 旋轉
+      const resized = await imageCompression(file, { maxSizeMB: 1.5, maxWidthOrHeight: 1600, useWebWorker: true })
+      setCropSrc(URL.createObjectURL(resized))
+    } catch (error) {
+      console.error('讀取圖片失敗', error)
+    }
+  }
+
+  const deleteOldCover = async (url) => {
+    if (!url) return
+    try {
+      await deleteObject(ref(storage, url))
+    } catch (error) {
+      console.warn('刪除舊封面失敗', error)
+    }
+  }
+
+  const handleCoverConfirm = async (blob) => {
+    closeCrop()
+    setCoverSaving(true)
+    try {
+      const storageRef = ref(storage, `groups/${id}/cover/${Date.now()}.jpg`)
+      const snapshot = await uploadBytes(storageRef, blob, { contentType: 'image/jpeg' })
+      const coverUrl = await getDownloadURL(snapshot.ref)
+      await updateDoc(doc(db, 'groups', id), { coverUrl })
+      await deleteOldCover(group.coverUrl)
+      setGroup(prev => ({ ...prev, coverUrl }))
+    } catch (error) {
+      console.error('上傳封面失敗', error)
+    }
+    setCoverSaving(false)
+  }
+
+  const handleRemoveCover = async () => {
+    if (!group.coverUrl || coverSaving) return
+    setCoverSaving(true)
+    try {
+      await updateDoc(doc(db, 'groups', id), { coverUrl: null })
+      await deleteOldCover(group.coverUrl)
+      setGroup(prev => ({ ...prev, coverUrl: null }))
+    } catch (error) {
+      console.error('移除封面失敗', error)
+    }
+    setCoverSaving(false)
   }
 
   const handleRenameMember = async (uid) => {
@@ -210,6 +271,37 @@ const EditGroupPage = () => {
           />
         </div>
 
+        {/* 群組封面 */}
+        <div style={{ background: '#fff', borderRadius: 16, border: '0.5px solid #f0d5c0', padding: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 500, color: '#b08060', marginBottom: 10 }}>群組封面</div>
+          <div style={{
+            width: '100%', aspectRatio: COVER_ASPECT, borderRadius: 12, overflow: 'hidden', marginBottom: 10,
+            background: group.coverUrl ? `url(${group.coverUrl}) center / cover` : 'linear-gradient(135deg, #FF8C42 0%, #FF6B1A 100%)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.85)', fontSize: 12,
+          }}>
+            {coverSaving ? '處理中...' : !group.coverUrl && '尚未設定封面'}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <label style={{
+              flex: 1, textAlign: 'center', padding: '10px 0', borderRadius: 10, fontSize: 13, fontWeight: 500,
+              background: coverSaving ? '#e0c4b0' : '#FF8C42', color: '#fff', cursor: coverSaving ? 'not-allowed' : 'pointer',
+            }}>
+              {group.coverUrl ? '更換圖片' : '選擇圖片'}
+              <input type="file" accept="image/*" onChange={handleCoverFile} disabled={coverSaving} style={{ display: 'none' }} />
+            </label>
+            {group.coverUrl && (
+              <button
+                onClick={handleRemoveCover}
+                disabled={coverSaving}
+                style={{ padding: '10px 16px', borderRadius: 10, border: '1px solid #f0d5c0', background: '#fff', color: '#e57373', fontSize: 13, cursor: coverSaving ? 'not-allowed' : 'pointer' }}
+              >
+                移除
+              </button>
+            )}
+          </div>
+          <div style={{ fontSize: 11, color: '#c4a882', marginTop: 8 }}>建議使用橫式照片，選圖後可拖曳與縮放調整範圍</div>
+        </div>
+
         {/* 成員管理 */}
         <div style={{ background: '#fff', borderRadius: 16, border: '0.5px solid #f0d5c0', padding: 14 }}>
           <div style={{ fontSize: 12, fontWeight: 500, color: '#b08060', marginBottom: 12 }}>成員管理</div>
@@ -335,6 +427,8 @@ const EditGroupPage = () => {
         )}
 
       </div>
+
+      {cropSrc && <CropModal imageSrc={cropSrc} onCancel={closeCrop} onConfirm={handleCoverConfirm} />}
     </div>
   )
 }

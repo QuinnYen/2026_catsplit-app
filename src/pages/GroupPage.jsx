@@ -227,8 +227,13 @@ const GroupPage = () => {
     <div style={{ minHeight: '100vh', background: '#fff8f4', display: 'flex', flexDirection: 'column' }}>
 
       {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, #FF8C42 0%, #FF6B1A 100%)', padding: '16px 16px 24px', position: 'relative', overflow: 'hidden' }}>
-        <PawDecor />
+      <div style={{
+        background: group.coverUrl
+          ? `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.5)), url(${group.coverUrl}) center / cover`
+          : 'linear-gradient(135deg, #FF8C42 0%, #FF6B1A 100%)',
+        padding: '16px 16px 24px', position: 'relative', overflow: 'hidden',
+      }}>
+        {!group.coverUrl && <PawDecor />}
 
         {/* 返回列 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
