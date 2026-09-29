@@ -6,13 +6,14 @@ import { useApp } from '../context/AppContext'
 import TabBar from '../components/TabBar'
 import Avatar from '../components/Avatar'
 import { CURRENCIES } from '../config/currencies'
+import { GROUP_EMOJIS } from '../config/groupEmojis'
 
 const CreateGroupPage = () => {
   const { user } = useApp()
   const navigate = useNavigate()
   const [name, setName] = useState('')
   const [baseCurrency, setBaseCurrency] = useState('TWD')
-  const emoji = '🐱'
+  const [emoji, setEmoji] = useState(GROUP_EMOJIS[0])
   const [loading, setLoading] = useState(false)
 
   const handleCreate = async () => {
@@ -98,6 +99,27 @@ const CreateGroupPage = () => {
           </div>
           <div style={{ fontSize: 11, color: '#c4a882', marginTop: 8 }}>
             所有支出都會換算成此貨幣進行結算
+          </div>
+        </div>
+
+        {/* 群組圖示 */}
+        <div style={{ background: '#fff', borderRadius: 16, border: '0.5px solid #f0d5c0', padding: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 500, color: '#b08060', marginBottom: 10 }}>群組圖示</div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {GROUP_EMOJIS.map(e => (
+              <button
+                key={e}
+                onClick={() => setEmoji(e)}
+                style={{
+                  width: 40, height: 40, borderRadius: 12, fontSize: 20, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: emoji === e ? '1.5px solid #FF8C42' : '0.5px solid #f0d5c0',
+                  background: emoji === e ? '#fff3ec' : '#fff8f4',
+                }}
+              >
+                {e}
+              </button>
+            ))}
           </div>
         </div>
 
