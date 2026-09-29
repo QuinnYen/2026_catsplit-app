@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { doc, collection, onSnapshot, orderBy, query, deleteDoc, getDocs, updateDoc, arrayUnion } from 'firebase/firestore'
 
-import { Check, Plus, Calculator, X, Receipt, Search, Banknote, Trash2, Pencil, MoreVertical } from 'lucide-react'
+import { Check, Plus, Calculator, X, Receipt, Search, Banknote, Trash2, Pencil, MoreVertical, ChevronRight } from 'lucide-react'
 import { db } from '../config/firebase'
 import { useApp } from '../context/AppContext'
 import TabBar from '../components/TabBar'
@@ -317,14 +317,22 @@ const GroupPage = () => {
         </div>
 
         {/* 總金額卡片 */}
-        <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 16, padding: 14, border: '1px solid rgba(255,255,255,0.3)' }}>
-          <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, marginBottom: 4 }}>總支出</div>
-          <div style={{ color: '#fff', fontSize: 24, fontWeight: 700 }}>
-            {getCurrency(group.baseCurrency).symbol} {total.toLocaleString()}
+        <div
+          onClick={() => navigate(`/group/${id}/stats`)}
+          style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 16, padding: 14, border: '1px solid rgba(255,255,255,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+          onTouchStart={e => e.currentTarget.style.opacity = '0.75'}
+          onTouchEnd={e => e.currentTarget.style.opacity = '1'}
+        >
+          <div style={{ flex: 1 }}>
+            <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, marginBottom: 4 }}>總支出</div>
+            <div style={{ color: '#fff', fontSize: 24, fontWeight: 700 }}>
+              {getCurrency(group.baseCurrency).symbol} {total.toLocaleString()}
+            </div>
+            <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 4 }}>
+              共 {expenses.length} 筆消費
+            </div>
           </div>
-          <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 4 }}>
-            共 {expenses.length} 筆消費
-          </div>
+          <ChevronRight size={22} color="rgba(255,255,255,0.8)" style={{ flexShrink: 0 }} />
         </div>
       </div>
 

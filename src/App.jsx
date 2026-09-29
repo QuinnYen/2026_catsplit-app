@@ -12,6 +12,7 @@ import EditGroupPage from './pages/EditGroupPage'
 import TransferPage from './pages/TransferPage'
 import EditExpensePage from './pages/EditExpensePage'
 import ExpenseDetailPage from './pages/ExpenseDetailPage'
+import StatsPage from './pages/StatsPage'
 import AuthCallbackPage from './pages/AuthCallbackPage'
 
 const LoadingScreen = () => (
@@ -76,6 +77,7 @@ const ProtectedRoutes = () => {
       <Route path="/group/:id" element={<GroupPage />} />
       <Route path="/group/:id/add" element={<AddExpensePage />} />
       <Route path="/group/:id/settle" element={<SettlePage />} />
+      <Route path="/group/:id/stats" element={<StatsPage />} />
       <Route path="/group/:id/transfer" element={<TransferPage />} />
       <Route path="/group/:id/expense/:expenseId" element={<ExpenseDetailPage />} />
       <Route path="/group/:id/expense/:expenseId/edit" element={<EditExpensePage />} />

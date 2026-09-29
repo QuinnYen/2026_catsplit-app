@@ -3,32 +3,39 @@ import { fetchExchangeRate } from '../config/currencies'
 
 // savedRate: { currency, rate }，編輯既有消費時傳入；幣別相同就沿用，不重新抓取
 const useExchangeRate = (currency, baseCurrency, savedRate) => {
-  const [exchangeRate, setExchangeRate] = useState(1)
-  const [rateLoading, setRateLoading] = useState(false)
-  const [rateError, setRateError] = useState(false)
-  const [rateManual, setRateManual] = useState(false)
+  const key = `${currency}>${baseCurrency}`
+  const [fetched, setFetched] = useState(null) // { key, rate, error? }
+  const [manual, setManual] = useState(null) // { key, rate }
+
+  const usesSaved = savedRate?.currency === currency
+  const needsFetch = !!baseCurrency && currency !== baseCurrency && !usesSaved
 
   useEffect(() => {
-    if (!baseCurrency) return
-    setRateManual(false)
-    setRateError(false)
-    if (currency === baseCurrency) { setExchangeRate(1); return }
-    if (savedRate?.currency === currency) { setExchangeRate(savedRate.rate); setRateLoading(false); return }
+    if (!needsFetch) return
     let cancelled = false
-    setRateLoading(true)
     fetchExchangeRate(currency, baseCurrency)
-      .then(rate => { if (!cancelled) setExchangeRate(rate) })
-      .catch(() => { if (!cancelled) { setExchangeRate(null); setRateError(true) } })
-      .finally(() => { if (!cancelled) setRateLoading(false) })
+      .then(rate => { if (!cancelled) setFetched({ key, rate }) })
+      .catch(() => { if (!cancelled) setFetched({ key, rate: null, error: true }) })
     return () => { cancelled = true }
-  }, [currency, baseCurrency, savedRate])
+  }, [needsFetch, currency, baseCurrency, key])
 
-  const setManualRate = (rate) => {
-    setExchangeRate(rate)
-    setRateManual(true)
-  }
+  // 只採用與目前幣別組合相符的結果，切換幣別時舊結果自動失效
+  const manualHit = manual?.key === key ? manual : null
+  const fetchedHit = needsFetch && fetched?.key === key ? fetched : null
 
-  return { exchangeRate, setExchangeRate, setManualRate, rateLoading, rateError, rateManual }
+  const rateLoading = needsFetch && !fetchedHit
+  const rateError = !!fetchedHit?.error
+  const rateManual = !!manualHit
+
+  let exchangeRate = null
+  if (manualHit) exchangeRate = manualHit.rate
+  else if (!baseCurrency || currency === baseCurrency) exchangeRate = 1
+  else if (usesSaved) exchangeRate = savedRate.rate
+  else if (fetchedHit) exchangeRate = fetchedHit.rate
+
+  const setManualRate = (rate) => setManual({ key, rate })
+
+  return { exchangeRate, setManualRate, rateLoading, rateError, rateManual }
 }
 
 export default useExchangeRate

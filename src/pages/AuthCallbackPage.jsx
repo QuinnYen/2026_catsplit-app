@@ -7,25 +7,20 @@ const AuthCallbackPage = () => {
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const { completeOAuthCallback } = useApp()
-  const [error, setError] = useState(null)
+  const [exchangeError, setError] = useState(null)
   const ranRef = useRef(false)
 
+  const code = params.get('code')
+  const state = params.get('state')
+  const oauthError = params.get('error')
+  const paramError = oauthError
+    ? `授權失敗：${oauthError}`
+    : (!code || !state) ? '缺少授權參數' : null
+  const error = paramError || exchangeError
+
   useEffect(() => {
-    if (ranRef.current) return
+    if (ranRef.current || paramError) return
     ranRef.current = true
-
-    const code = params.get('code')
-    const state = params.get('state')
-    const oauthError = params.get('error')
-
-    if (oauthError) {
-      setError(`授權失敗：${oauthError}`)
-      return
-    }
-    if (!code || !state) {
-      setError('缺少授權參數')
-      return
-    }
 
     completeOAuthCallback({ code, state })
       .then(() => {
@@ -37,7 +32,7 @@ const AuthCallbackPage = () => {
         console.error(e)
         setError(`登入處理失敗：${e.message}`)
       })
-  }, [params, completeOAuthCallback, navigate])
+  }, [code, state, paramError, completeOAuthCallback, navigate])
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #fff8f4 0%, #ffe8d6 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>

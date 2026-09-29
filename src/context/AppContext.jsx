@@ -109,7 +109,7 @@ export const AppProvider = ({ children }) => {
         if (cached) {
           try {
             setUser(JSON.parse(cached))
-          } catch (e) {
+          } catch {
             localStorage.removeItem(STORAGE_KEY)
           }
           // 等 Firebase Auth 自動恢復登入狀態完成，避免頁面在 request.auth 還是
@@ -190,6 +190,7 @@ export const AppProvider = ({ children }) => {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useApp = () => {
   const context = useContext(AppContext)
   if (!context) throw new Error('useApp 必須在 AppProvider 內使用')
