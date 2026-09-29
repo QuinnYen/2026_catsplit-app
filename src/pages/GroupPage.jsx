@@ -23,6 +23,7 @@ const GroupPage = () => {
   const [activeCategory, setActiveCategory] = useState(null)
   const [openMenuId, setOpenMenuId] = useState(null)
   const [joining, setJoining] = useState(false)
+  const [loadedCover, setLoadedCover] = useState(null)
 
   useEffect(() => {
     const unsubscribe = onSnapshot(doc(db, 'groups', id), (snap) => {
@@ -228,12 +229,25 @@ const GroupPage = () => {
 
       {/* Header */}
       <div style={{
-        background: group.coverUrl
-          ? `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.5)), url(${group.coverUrl}) center / cover`
-          : 'linear-gradient(135deg, #FF8C42 0%, #FF6B1A 100%)',
-        padding: '16px 16px 24px', position: 'relative', overflow: 'hidden', fontWeight: 700,
+        background: 'linear-gradient(135deg, #FF8C42 0%, #FF6B1A 100%)',
+        padding: '16px 16px 24px', position: 'relative', overflow: 'hidden', fontWeight: 700, isolation: 'isolate',
       }}>
-        {!group.coverUrl && <PawDecor />}
+        {group.coverUrl ? (
+          <>
+            <img
+              src={group.coverUrl}
+              alt=""
+              onLoad={() => setLoadedCover(group.coverUrl)}
+              style={{
+                position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: -2,
+                opacity: loadedCover === group.coverUrl ? 1 : 0, transition: 'opacity 0.25s',
+              }}
+            />
+            <div style={{ position: 'absolute', inset: 0, zIndex: -1, background: 'linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.5))' }} />
+          </>
+        ) : (
+          <PawDecor />
+        )}
 
         {/* 返回列 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
