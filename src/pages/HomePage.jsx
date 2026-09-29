@@ -211,6 +211,11 @@ const HomePage = () => {
                       {profiles.map((member, i) => (
                         <Avatar key={i} src={member.avatar} name={member.name} size={18} style={{ border: '1.5px solid #fff', marginLeft: i === 0 ? 0 : -5 }} />
                       ))}
+                      {(group.members?.length || 0) > profiles.length && (
+                        <div style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid #fff', marginLeft: -5, background: '#f0d5c0', color: '#b08060', fontSize: 9, fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
+                          +{group.members.length - profiles.length}
+                        </div>
+                      )}
                     </div>
                     {group.members?.length} 位成員
                   </div>

@@ -179,12 +179,20 @@ const GroupPage = () => {
           <div style={{ background: '#fff', borderRadius: 16, border: '0.5px solid #f0d5c0', padding: 14 }}>
             <div style={{ fontSize: 12, fontWeight: 500, color: '#b08060', marginBottom: 10 }}>目前成員</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {profiles.map((member, i) => (
+              {profiles.slice(0, 3).map((member, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <Avatar src={member.avatar} name={member.name} size={36} />
                   <div style={{ fontSize: 14, color: '#3d2b1f', fontWeight: 500 }}>{member.name}</div>
                 </div>
               ))}
+              {(group.members?.length || 0) > 3 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#f0d5c0', color: '#b08060', fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    +{group.members.length - 3}
+                  </div>
+                  <div style={{ fontSize: 14, color: '#b08060' }}>位成員</div>
+                </div>
+              )}
             </div>
           </div>
           <div style={{ background: '#fff', borderRadius: 16, border: '0.5px solid #f0d5c0', padding: 14 }}>
@@ -286,7 +294,7 @@ const GroupPage = () => {
 
         {/* 成員頭像 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 14 }}>
-          {profiles.map((member, i) => (
+          {profiles.slice(0, 6).map((member, i) => (
             <Avatar
               key={i}
               src={member.avatar}
@@ -296,6 +304,11 @@ const GroupPage = () => {
               style={{ background: '#ffe0c8', border: '2px solid rgba(255,255,255,0.6)', marginLeft: i === 0 ? 0 : -6 }}
             />
           ))}
+          {(group.members?.length || 0) > 6 && (
+            <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.6)', marginLeft: -6, background: '#ffe0c8', color: '#b08060', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
+              +{group.members.length - 6}
+            </div>
+          )}
           <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, marginLeft: 8 }}>
             {group.members?.length} 位成員
           </span>
@@ -487,8 +500,11 @@ const GroupPage = () => {
                               <div style={{ fontSize: 14, fontWeight: 500, color: '#3d2b1f', marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {item.title}
                               </div>
-                              <div style={{ fontSize: 12, color: '#b08060' }}>
-                                {group.memberProfiles?.[item.paidBy]?.name || '未知'} 付款
+                              <div style={{ fontSize: 12, color: '#b08060', display: 'flex' }}>
+                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {group.memberProfiles?.[item.paidBy]?.name || '未知'}
+                                </span>
+                                <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>&nbsp;付款</span>
                               </div>
                             </div>
                             <div style={{ flexShrink: 0, textAlign: 'right' }}>
