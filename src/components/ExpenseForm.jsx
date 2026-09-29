@@ -10,22 +10,12 @@ const inputStyle = {
   padding: '10px 12px', fontSize: 14, color: '#3d2b1f', outline: 'none', background: '#fff8f4',
 }
 
-const cardStyle = { background: '#fff', borderRadius: 16, border: '0.5px solid #f0d5c0', padding: 14 }
+const CUSTOM_OPTION = '__custom'
+
+const cardStyle ={ background: '#fff', borderRadius: 16, border: '0.5px solid #f0d5c0', padding: 14 }
 const labelStyle = { fontSize: 12, fontWeight: 500, color: '#b08060', marginBottom: 8 }
 const chipActiveStyle = { background: '#FF8C42', color: '#fff', fontWeight: 500 }
 const chipIdleStyle = { background: '#fff3ec', color: '#b08060', fontWeight: 400 }
-
-const Chip = ({ active, onClick, children, style }) => (
-  <button
-    onClick={onClick}
-    style={{
-      padding: '6px 14px', borderRadius: 20, fontSize: 13, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-      ...(active ? chipActiveStyle : chipIdleStyle), ...style,
-    }}
-  >
-    {children}
-  </button>
-)
 
 const Checkbox = ({ checked }) => (
   <div style={{
@@ -123,14 +113,31 @@ const ExpenseForm = ({
     <>
       {/* 類別 */}
       <div style={cardStyle}>
-        <div style={labelStyle}>類別</div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: isEditingCategory ? 10 : 0 }}>
-          {DEFAULT_CATEGORIES.map(c => (
-            <Chip key={c} active={category === c && !isEditingCategory} onClick={() => { setCategory(c); setIsEditingCategory(false) }}>
-              {c}
-            </Chip>
-          ))}
-          <Chip active={isEditingCategory} onClick={() => setIsEditingCategory(true)}>自訂</Chip>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={labelStyle}>類別</div>
+            <select
+              value={isEditingCategory ? CUSTOM_OPTION : category}
+              onChange={e => {
+                if (e.target.value === CUSTOM_OPTION) {
+                  setIsEditingCategory(true)
+                } else {
+                  setCategory(e.target.value)
+                  setIsEditingCategory(false)
+                }
+              }}
+              style={inputStyle}
+            >
+              {DEFAULT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              <option value={CUSTOM_OPTION}>自訂</option>
+            </select>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={labelStyle}>貨幣</div>
+            <select value={currency} onChange={e => setCurrency(e.target.value)} style={inputStyle}>
+              {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.symbol} {c.code}</option>)}
+            </select>
+          </div>
         </div>
         {isEditingCategory && (
           <input
@@ -140,12 +147,42 @@ const ExpenseForm = ({
             placeholder="輸入自訂類別..."
             maxLength={10}
             autoFocus
-            style={{ ...inputStyle, border: '0.5px solid #FF8C42', marginTop: 4 }}
+            style={{ ...inputStyle, border: '0.5px solid #FF8C42', marginTop: 10 }}
           />
+        )}
+        {currency !== baseCurrency && (
+          <div style={{ marginTop: 10, padding: 10, borderRadius: 10, background: '#fff8f4', border: '0.5px solid #f0d5c0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 12, color: '#b08060' }}>匯率 1 {currency} =</span>
+              {rateLoading ? (
+                <span style={{ fontSize: 12, color: '#c4a882' }}>抓取中...</span>
+              ) : (
+                <input
+                  type="number"
+                  step="any"
+                  min="0"
+                  value={exchangeRate ?? ''}
+                  onChange={e => setExchangeRate(parseFloat(e.target.value) || null)}
+                  placeholder="請輸入"
+                  style={{ width: 100, border: `0.5px solid ${rateError ? '#e05a4f' : '#FF8C42'}`, borderRadius: 8, padding: '6px 8px', fontSize: 14, color: '#3d2b1f', outline: 'none', background: '#fff' }}
+                />
+              )}
+              <span style={{ fontSize: 12, color: '#b08060' }}>{baseCurrency}</span>
+            </div>
+            {!rateLoading && (
+              <div style={{ marginTop: 6, fontSize: 11, color: rateError ? '#e05a4f' : '#c4a882' }}>
+                {rateError
+                  ? '匯率抓取失敗，請手動輸入'
+                  : rateManual
+                    ? '已手動修改匯率'
+                    : '自動帶入參考匯率，可直接修改'}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
-      {/* 名稱 / 日期 / 貨幣 / 金額 */}
+      {/* 名稱 / 日期 / 金額 */}
       <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div>
           <div style={labelStyle}>項目名稱</div>
@@ -168,54 +205,6 @@ const ExpenseForm = ({
             max={todayStr()}
             style={inputStyle}
           />
-        </div>
-
-        <div>
-          <div style={labelStyle}>貨幣</div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {CURRENCIES.map(c => (
-              <button
-                key={c.code}
-                onClick={() => setCurrency(c.code)}
-                style={{
-                  padding: '6px 12px', borderRadius: 20, fontSize: 12, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                  ...(currency === c.code ? chipActiveStyle : chipIdleStyle),
-                }}
-              >
-                {c.symbol} {c.code}
-              </button>
-            ))}
-          </div>
-          {currency !== baseCurrency && (
-            <div style={{ marginTop: 10, padding: 10, borderRadius: 10, background: '#fff8f4', border: '0.5px solid #f0d5c0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 12, color: '#b08060' }}>匯率 1 {currency} =</span>
-                {rateLoading ? (
-                  <span style={{ fontSize: 12, color: '#c4a882' }}>抓取中...</span>
-                ) : (
-                  <input
-                    type="number"
-                    step="any"
-                    min="0"
-                    value={exchangeRate ?? ''}
-                    onChange={e => setExchangeRate(parseFloat(e.target.value) || null)}
-                    placeholder="請輸入"
-                    style={{ width: 100, border: `0.5px solid ${rateError ? '#e05a4f' : '#FF8C42'}`, borderRadius: 8, padding: '6px 8px', fontSize: 14, color: '#3d2b1f', outline: 'none', background: '#fff' }}
-                  />
-                )}
-                <span style={{ fontSize: 12, color: '#b08060' }}>{baseCurrency}</span>
-              </div>
-              {!rateLoading && (
-                <div style={{ marginTop: 6, fontSize: 11, color: rateError ? '#e05a4f' : '#c4a882' }}>
-                  {rateError
-                    ? '匯率抓取失敗，請手動輸入'
-                    : rateManual
-                      ? '已手動修改匯率'
-                      : '自動帶入參考匯率，可直接修改'}
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         <div>
