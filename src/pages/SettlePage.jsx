@@ -136,42 +136,34 @@ const SettlePage = () => {
             </div>
           </div>
 
-          {/* 貨幣切換 */}
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
-            {CURRENCIES.map(c => (
-              <button
-                key={c.code}
-                onClick={() => setDisplayCurrency(c.code)}
-                style={{
-                  padding: '5px 12px', borderRadius: 20, fontSize: 12, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                  background: displayCurrency === c.code ? '#FF8C42' : '#fff3ec',
-                  color: displayCurrency === c.code ? '#fff' : '#b08060',
-                  fontWeight: displayCurrency === c.code ? 500 : 400,
-                }}
+          {/* 貨幣選單 + 總支出 */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <select
+                value={displayCurrency}
+                onChange={e => setDisplayCurrency(e.target.value)}
+                style={{ width: '100%', border: '0.5px solid #f0d5c0', borderRadius: 10, padding: '8px 10px', fontSize: 14, color: '#3d2b1f', outline: 'none', background: '#fff8f4' }}
               >
-                {c.symbol} {c.code}
-              </button>
-            ))}
-          </div>
-
-          {displayCurrency !== baseCurrency && (
-            <div style={{ fontSize: 11, color: '#c4a882', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <AlertTriangle size={12} style={{ flexShrink: 0 }} /> 以即時匯率換算僅供參考，實際金額以 {getCurrency(baseCurrency).symbol} {baseCurrency} 為準
+                {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.symbol} {c.code}</option>)}
+              </select>
+              {displayCurrency !== baseCurrency && (
+                <div style={{ fontSize: 11, color: '#c4a882', marginTop: 6, display: 'flex', alignItems: 'flex-start', gap: 4 }}>
+                  <AlertTriangle size={12} style={{ flexShrink: 0, marginTop: 1 }} /> 以即時匯率換算僅供參考，實際金額以 {getCurrency(baseCurrency).symbol} {baseCurrency} 為準
+                </div>
+              )}
             </div>
-          )}
-
-          <div style={{ background: '#fff3ec', borderRadius: 12, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
               <div style={{ fontSize: 11, color: '#b08060', marginBottom: 2 }}>總支出</div>
               <div style={{ fontSize: 22, fontWeight: 500, color: '#FF6B1A' }}>
                 {rateLoading ? '...' : fmt(total)}
               </div>
             </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 11, color: '#b08060', marginBottom: 2 }}>我的應付</div>
-              <div style={{ fontSize: 22, fontWeight: 500, color: '#FF6B1A' }}>
-                {rateLoading ? '...' : fmt(expenses.reduce((sum, e) => sum + (e.splits?.[user?.uid] || 0), 0))}
-              </div>
+          </div>
+
+          <div style={{ background: '#fff3ec', borderRadius: 12, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: 13, color: '#b08060' }}>我要付</div>
+            <div style={{ fontSize: 22, fontWeight: 500, color: '#FF6B1A' }}>
+              {rateLoading ? '...' : fmt(expenses.reduce((sum, e) => sum + (e.splits?.[user?.uid] || 0), 0))}
             </div>
           </div>
         </div>
@@ -237,12 +229,14 @@ const SettlePage = () => {
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                       <Avatar src={from?.avatar} name={from?.name} size={32} />
-                      <div style={{ fontSize: 13, color: '#3d2b1f', flex: 1 }}>
-                        <span style={{ fontWeight: 500 }}>{from?.name}</span>
-                        <span style={{ color: '#b08060' }}> 轉給 </span>
-                        <span style={{ fontWeight: 500 }}>{to?.name}</span>
+                      <div style={{ fontSize: 13, color: '#3d2b1f', flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{from?.name}</div>
+                        <div style={{ display: 'flex', marginTop: 2 }}>
+                          <span style={{ color: '#b08060', flexShrink: 0, whiteSpace: 'nowrap' }}>轉給&nbsp;</span>
+                          <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{to?.name}</span>
+                        </div>
                       </div>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: '#FF6B1A' }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: '#FF6B1A', flexShrink: 0 }}>
                         {rateLoading ? '...' : fmt(s.amount)}
                       </div>
                       <Avatar src={to?.avatar} name={to?.name} size={32} />
@@ -273,13 +267,15 @@ const SettlePage = () => {
                 return (
                   <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: '0.5px solid #f5e8dc' }}>
                     <CheckCircle2 size={16} color="#4caf50" style={{ flexShrink: 0 }} />
-                    <div style={{ flex: 1, fontSize: 12, color: '#b08060' }}>
-                      <span style={{ color: '#3d2b1f', fontWeight: 500 }}>{from?.name}</span>
-                      {' 轉給 '}
-                      <span style={{ color: '#3d2b1f', fontWeight: 500 }}>{to?.name}</span>
-                      {s.paymentMethod && <span style={{ marginLeft: 4 }}>· {s.paymentMethod}</span>}
+                    <div style={{ flex: 1, minWidth: 0, fontSize: 12, color: '#b08060' }}>
+                      <div style={{ color: '#3d2b1f', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{from?.name}</div>
+                      <div style={{ display: 'flex', marginTop: 2 }}>
+                        <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>轉給&nbsp;</span>
+                        <span style={{ color: '#3d2b1f', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{to?.name}</span>
+                        {s.paymentMethod && <span style={{ marginLeft: 4, flexShrink: 0, whiteSpace: 'nowrap' }}>· {s.paymentMethod}</span>}
+                      </div>
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: '#4caf50' }}>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: '#4caf50', flexShrink: 0 }}>
                       {getCurrency(s.currency || baseCurrency).symbol} {s.amount.toLocaleString()}
                     </div>
                   </div>
