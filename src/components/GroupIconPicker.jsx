@@ -8,7 +8,7 @@ const GroupIconPicker = ({ icon, color, onChange, disabled = false }) => {
   const [open, setOpen] = useState(null) // 'color' | 'icon' | null
   const currentIcon = icon || DEFAULT_GROUP_ICON
   const currentColor = color || DEFAULT_GROUP_COLOR
-  const palette = GROUP_COLORS[currentColor]
+  const palette = GROUP_COLORS[currentColor] || GROUP_COLORS[DEFAULT_GROUP_COLOR]
   const CurrentIcon = GROUP_ICONS[currentIcon]
 
   const toggle = (name) => setOpen(v => (v === name ? null : name))

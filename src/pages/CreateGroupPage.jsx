@@ -69,7 +69,10 @@ const CreateGroupPage = () => {
 
         {/* 群組名稱 */}
         <div style={{ background: '#fff', borderRadius: 16, border: '0.5px solid #f0d5c0', padding: 14 }}>
-          <div style={{ fontSize: 12, fontWeight: 500, color: '#b08060', marginBottom: 8 }}>群組名稱</div>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: '#b08060' }}>群組名稱</div>
+            <div style={{ fontSize: 11, color: '#c4a882' }}>{name.length} / 20</div>
+          </div>
           <input
             type="text"
             value={name}
@@ -78,30 +81,18 @@ const CreateGroupPage = () => {
             maxLength={20}
             style={{ width: '100%', border: '0.5px solid #f0d5c0', borderRadius: 10, padding: '10px 12px', fontSize: 14, color: '#3d2b1f', outline: 'none', background: '#fff8f4' }}
           />
-          <div style={{ textAlign: 'right', fontSize: 11, color: '#c4a882', marginTop: 6 }}>
-            {name.length} / 20
-          </div>
         </div>
 
         {/* 基準貨幣 */}
         <div style={{ background: '#fff', borderRadius: 16, border: '0.5px solid #f0d5c0', padding: 14 }}>
           <div style={{ fontSize: 12, fontWeight: 500, color: '#b08060', marginBottom: 10 }}>結算基準貨幣</div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {CURRENCIES.map(c => (
-              <button
-                key={c.code}
-                onClick={() => setBaseCurrency(c.code)}
-                style={{
-                  padding: '7px 14px', borderRadius: 20, fontSize: 13, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                  background: baseCurrency === c.code ? '#FF8C42' : '#fff3ec',
-                  color: baseCurrency === c.code ? '#fff' : '#b08060',
-                  fontWeight: baseCurrency === c.code ? 500 : 400,
-                }}
-              >
-                {c.symbol} {c.label}
-              </button>
-            ))}
-          </div>
+          <select
+            value={baseCurrency}
+            onChange={e => setBaseCurrency(e.target.value)}
+            style={{ width: '100%', border: '0.5px solid #f0d5c0', borderRadius: 10, padding: '10px 12px', fontSize: 14, color: '#3d2b1f', outline: 'none', background: '#fff8f4' }}
+          >
+            {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.symbol} {c.label}</option>)}
+          </select>
           <div style={{ fontSize: 11, color: '#c4a882', marginTop: 8 }}>
             所有支出都會換算成此貨幣進行結算
           </div>

@@ -106,6 +106,15 @@ const SettlePage = () => {
   const fmt = (amount) => `${dispCurr.symbol} ${Math.round(amount * displayRate).toLocaleString()}`
 
   const total = expenses.reduce((sum, e) => sum + e.amount, 0)
+  const myTotal = expenses.reduce((sum, e) => sum + (e.splits?.[user?.uid] || 0), 0)
+  const totalText = rateLoading ? '...' : fmt(total)
+  const myText = rateLoading ? '...' : fmt(myTotal)
+
+  // 金額位數多時逐級縮小字體，最後才用「…」截斷
+  const amountStyle = (text) => ({
+    fontSize: text.length <= 10 ? 22 : text.length <= 13 ? 18 : text.length <= 16 ? 15 : 13,
+    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+  })
 
   return (
     <div style={{ minHeight: '100vh', background: '#fff8f4', display: 'flex', flexDirection: 'column', paddingBottom: 80 }}>
@@ -152,19 +161,15 @@ const SettlePage = () => {
                 </div>
               )}
             </div>
-            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <div style={{ flex: 1, minWidth: 0, textAlign: 'right' }}>
               <div style={{ fontSize: 11, color: '#b08060', marginBottom: 2 }}>總支出</div>
-              <div style={{ fontSize: 22, fontWeight: 500, color: '#FF6B1A' }}>
-                {rateLoading ? '...' : fmt(total)}
-              </div>
+              <div style={{ ...amountStyle(totalText), fontWeight: 500, color: '#FF6B1A' }}>{totalText}</div>
             </div>
           </div>
 
-          <div style={{ background: '#fff3ec', borderRadius: 12, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: 13, color: '#b08060' }}>我要付</div>
-            <div style={{ fontSize: 22, fontWeight: 500, color: '#FF6B1A' }}>
-              {rateLoading ? '...' : fmt(expenses.reduce((sum, e) => sum + (e.splits?.[user?.uid] || 0), 0))}
-            </div>
+          <div style={{ background: '#fff3ec', borderRadius: 12, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+            <div style={{ fontSize: 13, color: '#b08060', flexShrink: 0 }}>我要付</div>
+            <div style={{ ...amountStyle(myText), minWidth: 0, fontWeight: 500, color: '#FF6B1A' }}>{myText}</div>
           </div>
         </div>
 
