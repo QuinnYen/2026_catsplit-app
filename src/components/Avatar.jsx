@@ -1,9 +1,9 @@
 import { useState } from 'react'
 
 const getInitial = (name) => {
-  if (!name) return '🐱'
+  if (!name) return '?'
   const trimmed = name.trim()
-  if (!trimmed) return '🐱'
+  if (!trimmed) return '?'
   return Array.from(trimmed)[0].toUpperCase()
 }
 

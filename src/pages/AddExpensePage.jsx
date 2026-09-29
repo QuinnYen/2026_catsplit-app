@@ -7,6 +7,7 @@ import { db, storage } from '../config/firebase'
 import { useApp } from '../context/AppContext'
 import TabBar from '../components/TabBar'
 import ExpenseForm from '../components/ExpenseForm'
+import PawDecor from '../components/PawDecor'
 import useExchangeRate from '../hooks/useExchangeRate'
 import { todayStr, computeSplits, applyExchangeRate } from '../utils/expenseHelpers'
 import { getCurrency } from '../config/currencies'
@@ -161,7 +162,7 @@ const AddExpensePage = () => {
                 type: 'box', layout: 'vertical', paddingAll: '16px',
                 backgroundColor: '#FF8C42',
                 contents: [{
-                  type: 'text', text: '🐱 CatSplit 新增支出', color: '#ffffff', size: 'sm', weight: 'bold',
+                  type: 'text', text: 'CatSplit 新增支出', color: '#ffffff', size: 'sm', weight: 'bold',
                 }],
               },
               body: {
@@ -188,7 +189,7 @@ const AddExpensePage = () => {
                     type: 'box', layout: 'horizontal',
                     contents: [
                       { type: 'text', text: '群組', size: 'sm', color: '#b08060', flex: 1 },
-                      { type: 'text', text: `${group.emoji || '🐱'} ${group.name}`, size: 'sm', color: '#3d2b1f', align: 'end' },
+                      { type: 'text', text: group.name, size: 'sm', color: '#3d2b1f', align: 'end' },
                     ],
                   },
                 ],
@@ -218,7 +219,7 @@ const AddExpensePage = () => {
   return (
     <div style={{ minHeight: '100vh', background: '#fff8f4', paddingBottom: 80 }}>
       <div style={{ background: 'linear-gradient(135deg, #FF8C42 0%, #FF6B1A 100%)', padding: '16px 16px 20px', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', right: 10, bottom: -10, fontSize: 64, opacity: 0.12, userSelect: 'none' }}>🐾</div>
+        <PawDecor />
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             onClick={() => navigate(`/group/${id}`)}

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useApp } from './context/AppContext'
 import catLogo from './assets/cat-logo.webp'
+import { MessageCircle, PawPrint, Wallet } from 'lucide-react'
 
 import HomePage from './pages/HomePage'
 import CreateGroupPage from './pages/CreateGroupPage'
@@ -25,7 +26,7 @@ const LoadingScreen = () => (
 const LoginScreen = ({ onLogin }) => (
   <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #fff8f4 0%, #ffe8d6 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px' }}>
     <img src={catLogo} alt="CatSplit" style={{ width: 120, height: 120, marginBottom: 16 }} />
-    <div style={{ fontSize: 24, fontWeight: 700, color: '#3d2b1f', marginBottom: 8 }}>CatSplit</div>
+    <div style={{ fontSize: 24, fontWeight: 700, color: '#3d2b1f', marginBottom: 8 }}>貓咪分帳 CatSplit</div>
     <div style={{ fontSize: 14, color: '#b08060', marginBottom: 48, textAlign: 'center', lineHeight: 1.6 }}>
       貓咪幫你分帳，輕鬆搞定朋友借錢
     </div>
@@ -33,15 +34,15 @@ const LoginScreen = ({ onLogin }) => (
     <div style={{ background: '#fff', borderRadius: 20, border: '0.5px solid #f0d5c0', padding: '24px 20px', width: '100%', maxWidth: 320, marginBottom: 32 }}>
       <div style={{ fontSize: 13, fontWeight: 500, color: '#b08060', marginBottom: 16, textAlign: 'center' }}>如何開始使用</div>
       {[
-        { icon: '💬', text: '使用 LINE 帳號登入' },
-        { icon: '🐾', text: '建立或加入分帳群組' },
-        { icon: '💰', text: '輕鬆記帳結算' },
-      ].map((step, i) => (
+        { Icon: MessageCircle, text: '使用 LINE 帳號登入' },
+        { Icon: PawPrint, text: '建立或加入分帳群組' },
+        { Icon: Wallet, text: '輕鬆記帳結算' },
+      ].map(({ Icon, text }, i) => (
         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: i < 2 ? 14 : 0 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: '#fff3ec', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
-            {step.icon}
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: '#fff3ec', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Icon size={18} color="#FF8C42" strokeWidth={2} />
           </div>
-          <div style={{ fontSize: 14, color: '#3d2b1f' }}>{step.text}</div>
+          <div style={{ fontSize: 14, color: '#3d2b1f' }}>{text}</div>
         </div>
       ))}
     </div>

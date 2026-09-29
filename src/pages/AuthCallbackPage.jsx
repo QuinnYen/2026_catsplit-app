@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
+import GroupIcon from '../components/GroupIcon'
 
 const AuthCallbackPage = () => {
   const [params] = useSearchParams()
@@ -40,7 +41,9 @@ const AuthCallbackPage = () => {
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #fff8f4 0%, #ffe8d6 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-      <div style={{ fontSize: 64, marginBottom: 16 }}>🐱</div>
+      <div style={{ marginBottom: 16 }}>
+        <GroupIcon icon="paw" color="orange" size={72} />
+      </div>
       {error ? (
         <>
           <div style={{ fontSize: 16, color: '#c0392b', marginBottom: 24, textAlign: 'center' }}>{error}</div>

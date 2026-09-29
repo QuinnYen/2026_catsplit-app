@@ -6,6 +6,8 @@ import { db } from '../config/firebase'
 import { useApp } from '../context/AppContext'
 import TabBar from '../components/TabBar'
 import Avatar from '../components/Avatar'
+import GroupIcon from '../components/GroupIcon'
+import PawDecor from '../components/PawDecor'
 import { getCurrency } from '../config/currencies'
 import catLogo from '../assets/cat-logo.webp'
 
@@ -50,12 +52,12 @@ const HomePage = () => {
       <div style={{ minHeight: '100vh', background: '#fff8f4', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px' }}>
         <div style={{ position: 'relative', width: '100%', maxWidth: 360 }}>
           {/* 裝飾 */}
-          <div style={{ position: 'absolute', top: -24, right: -8, fontSize: 72, opacity: 0.08, userSelect: 'none', pointerEvents: 'none' }}>🐾</div>
+          <PawDecor size={72} color="#FF8C42" opacity={0.08} style={{ top: -24, right: -8, bottom: 'auto' }} />
 
           {/* Logo / Icon */}
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
             <img src={catLogo} alt="CatSplit" style={{ width: 80, height: 80, borderRadius: 24, marginBottom: 16, boxShadow: '0 8px 24px rgba(255,107,26,0.25)' }} />
-            <div style={{ fontSize: 26, fontWeight: 700, color: '#3d2b1f', marginBottom: 6 }}>CatSplit</div>
+            <div style={{ fontSize: 26, fontWeight: 700, color: '#3d2b1f', marginBottom: 6 }}>貓咪分帳 CatSplit</div>
             <div style={{ fontSize: 14, color: '#b08060', lineHeight: 1.6 }}>
               和朋友一起分攤費用<br />簡單記帳，輕鬆結算
             </div>
@@ -97,7 +99,7 @@ const HomePage = () => {
       <div style={{ background: 'linear-gradient(135deg, #FF8C42 0%, #FF6B1A 100%)', padding: '20px 16px 28px', position: 'relative', overflow: 'hidden' }}>
 
         {/* 裝飾爪印 */}
-        <div style={{ position: 'absolute', right: 14, bottom: -8, fontSize: 64, opacity: 0.12, userSelect: 'none' }}>🐾</div>
+        <PawDecor style={{ right: 14, bottom: -8 }} />
 
         {/* 使用者資訊 */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -153,7 +155,9 @@ const HomePage = () => {
         {/* 空狀態 */}
         {!loading && activeGroups.length === 0 && archivedGroups.length === 0 && (
           <div style={{ textAlign: 'center', padding: '48px 0' }}>
-            <div style={{ fontSize: 56, marginBottom: 12 }}>🐱</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+              <GroupIcon icon="paw" color="orange" size={72} />
+            </div>
             <div style={{ color: '#b08060', fontSize: 14, marginBottom: 4 }}>還沒有任何群組</div>
             <div style={{ color: '#c4a882', fontSize: 13 }}>點右上角建立第一個吧！</div>
           </div>
@@ -174,9 +178,7 @@ const HomePage = () => {
                 onTouchStart={e => e.currentTarget.style.transform = 'scale(0.97)'}
                 onTouchEnd={e => e.currentTarget.style.transform = 'scale(1)'}
               >
-                <div style={{ width: 48, height: 48, borderRadius: 14, background: '#fff3ec', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, flexShrink: 0 }}>
-                  {group.emoji || '🐱'}
-                </div>
+                <GroupIcon icon={group.icon} color={group.iconColor} size={48} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 500, color: '#3d2b1f', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {group.name}

@@ -6,6 +6,7 @@ import { db } from '../config/firebase'
 import { useApp } from '../context/AppContext'
 import Avatar from '../components/Avatar'
 import TabBar from '../components/TabBar'
+import PawDecor from '../components/PawDecor'
 import { getCurrency } from '../config/currencies'
 
 const PAYMENT_METHODS = ['現金', 'LINE Pay', '街口支付', '銀行轉帳', '其他']
@@ -81,7 +82,7 @@ const TransferPage = () => {
 
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #FF8C42 0%, #FF6B1A 100%)', padding: '16px 16px 20px', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', right: 10, bottom: -10, fontSize: 64, opacity: 0.12, userSelect: 'none' }}>🐾</div>
+        <PawDecor />
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             onClick={() => navigate(`/group/${id}/settle`)}

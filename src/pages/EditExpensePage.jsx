@@ -8,6 +8,7 @@ import imageCompression from 'browser-image-compression'
 import { useApp } from '../context/AppContext'
 import TabBar from '../components/TabBar'
 import ExpenseForm, { DEFAULT_CATEGORIES } from '../components/ExpenseForm'
+import PawDecor from '../components/PawDecor'
 import useExchangeRate from '../hooks/useExchangeRate'
 import { toLocalDateStr, computeSplits, applyExchangeRate, computeMemberBalances } from '../utils/expenseHelpers'
 
@@ -231,7 +232,7 @@ const EditExpensePage = () => {
   return (
     <div style={{ minHeight: '100vh', background: '#fff8f4', paddingBottom: 80 }}>
       <div style={{ background: 'linear-gradient(135deg, #FF8C42 0%, #FF6B1A 100%)', padding: '16px 16px 20px', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', right: 10, bottom: -10, fontSize: 64, opacity: 0.12, userSelect: 'none' }}>🐾</div>
+        <PawDecor />
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             onClick={() => navigate(`/group/${id}/expense/${expenseId}`)}

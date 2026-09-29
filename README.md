@@ -1,4 +1,4 @@
-# 🐱 CatSplit
+# CatSplit
 
 > LINE LIFF 分帳應用程式，讓朋友之間的費用分攤變得簡單輕鬆。
 

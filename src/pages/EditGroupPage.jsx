@@ -4,7 +4,8 @@ import { doc, getDoc, updateDoc, arrayRemove, deleteDoc, collection, getDocs, wr
 import { db } from '../config/firebase'
 import { useApp } from '../context/AppContext'
 import Avatar from '../components/Avatar'
-import { GROUP_EMOJIS } from '../config/groupEmojis'
+import GroupIconPicker from '../components/GroupIconPicker'
+import PawDecor from '../components/PawDecor'
 
 const EditGroupPage = () => {
   const { id } = useParams()
@@ -13,7 +14,7 @@ const EditGroupPage = () => {
   const [group, setGroup] = useState(null)
   const [name, setName] = useState('')
   const [saving, setSaving] = useState(false)
-  const [emojiSaving, setEmojiSaving] = useState(false)
+  const [iconSaving, setIconSaving] = useState(false)
   const [removingUid, setRemovingUid] = useState(null)
   const [renamingUid, setRenamingUid] = useState(null)
   const [renameInput, setRenameInput] = useState('')
@@ -43,16 +44,16 @@ const EditGroupPage = () => {
     setSaving(false)
   }
 
-  const handleChangeEmoji = async (emoji) => {
-    if (emoji === group.emoji || emojiSaving) return
-    setEmojiSaving(true)
+  const handleChangeIcon = async (patch) => {
+    if (iconSaving) return
+    setIconSaving(true)
     try {
-      await updateDoc(doc(db, 'groups', id), { emoji })
-      setGroup(prev => ({ ...prev, emoji }))
+      await updateDoc(doc(db, 'groups', id), patch)
+      setGroup(prev => ({ ...prev, ...patch }))
     } catch (error) {
       console.error('更新圖示失敗', error)
     }
-    setEmojiSaving(false)
+    setIconSaving(false)
   }
 
   const handleRenameMember = async (uid) => {
@@ -158,7 +159,7 @@ const EditGroupPage = () => {
 
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #FF8C42 0%, #FF6B1A 100%)', padding: '16px 16px 20px', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', right: 10, bottom: -10, fontSize: 64, opacity: 0.12, userSelect: 'none' }}>🐾</div>
+        <PawDecor />
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             onClick={() => navigate(`/group/${id}`)}
@@ -201,24 +202,12 @@ const EditGroupPage = () => {
         {/* 群組圖示 */}
         <div style={{ background: '#fff', borderRadius: 16, border: '0.5px solid #f0d5c0', padding: 14 }}>
           <div style={{ fontSize: 12, fontWeight: 500, color: '#b08060', marginBottom: 10 }}>群組圖示</div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {GROUP_EMOJIS.map(e => (
-              <button
-                key={e}
-                onClick={() => handleChangeEmoji(e)}
-                disabled={emojiSaving}
-                style={{
-                  width: 40, height: 40, borderRadius: 12, fontSize: 20, cursor: emojiSaving ? 'not-allowed' : 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: group.emoji === e ? '1.5px solid #FF8C42' : '0.5px solid #f0d5c0',
-                  background: group.emoji === e ? '#fff3ec' : '#fff8f4',
-                  opacity: emojiSaving && group.emoji !== e ? 0.5 : 1,
-                }}
-              >
-                {e}
-              </button>
-            ))}
-          </div>
+          <GroupIconPicker
+            icon={group.icon}
+            color={group.iconColor}
+            onChange={handleChangeIcon}
+            disabled={iconSaving}
+          />
         </div>
 
         {/* 成員管理 */}

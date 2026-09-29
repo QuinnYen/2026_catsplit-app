@@ -6,14 +6,18 @@ import { useApp } from '../context/AppContext'
 import TabBar from '../components/TabBar'
 import Avatar from '../components/Avatar'
 import { CURRENCIES } from '../config/currencies'
-import { GROUP_EMOJIS } from '../config/groupEmojis'
+import GroupIcon from '../components/GroupIcon'
+import GroupIconPicker from '../components/GroupIconPicker'
+import PawDecor from '../components/PawDecor'
+import { DEFAULT_GROUP_ICON, DEFAULT_GROUP_COLOR } from '../config/groupIcons'
 
 const CreateGroupPage = () => {
   const { user } = useApp()
   const navigate = useNavigate()
   const [name, setName] = useState('')
   const [baseCurrency, setBaseCurrency] = useState('TWD')
-  const [emoji, setEmoji] = useState(GROUP_EMOJIS[0])
+  const [icon, setIcon] = useState(DEFAULT_GROUP_ICON)
+  const [iconColor, setIconColor] = useState(DEFAULT_GROUP_COLOR)
   const [loading, setLoading] = useState(false)
 
   const handleCreate = async () => {
@@ -22,7 +26,8 @@ const CreateGroupPage = () => {
     try {
       const docRef = await addDoc(collection(db, 'groups'), {
         name: name.trim(),
-        emoji,
+        icon,
+        iconColor,
         createdBy: user.uid,
         members: [user.uid],
         memberProfiles: {
@@ -48,7 +53,7 @@ const CreateGroupPage = () => {
 
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #FF8C42 0%, #FF6B1A 100%)', padding: '16px 16px 20px', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', right: 10, bottom: -10, fontSize: 64, opacity: 0.12, userSelect: 'none' }}>🐾</div>
+        <PawDecor />
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             onClick={() => navigate('/')}
@@ -105,31 +110,18 @@ const CreateGroupPage = () => {
         {/* 群組圖示 */}
         <div style={{ background: '#fff', borderRadius: 16, border: '0.5px solid #f0d5c0', padding: 14 }}>
           <div style={{ fontSize: 12, fontWeight: 500, color: '#b08060', marginBottom: 10 }}>群組圖示</div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {GROUP_EMOJIS.map(e => (
-              <button
-                key={e}
-                onClick={() => setEmoji(e)}
-                style={{
-                  width: 40, height: 40, borderRadius: 12, fontSize: 20, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: emoji === e ? '1.5px solid #FF8C42' : '0.5px solid #f0d5c0',
-                  background: emoji === e ? '#fff3ec' : '#fff8f4',
-                }}
-              >
-                {e}
-              </button>
-            ))}
-          </div>
+          <GroupIconPicker
+            icon={icon}
+            color={iconColor}
+            onChange={patch => { if (patch.icon) setIcon(patch.icon); if (patch.iconColor) setIconColor(patch.iconColor) }}
+          />
         </div>
 
         {/* 預覽卡片 */}
         <div style={{ background: '#fff', borderRadius: 16, border: '0.5px solid #f0d5c0', padding: 14 }}>
           <div style={{ fontSize: 12, fontWeight: 500, color: '#b08060', marginBottom: 10 }}>預覽</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 48, height: 48, borderRadius: 14, background: '#fff3ec', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 }}>
-              {emoji}
-            </div>
+            <GroupIcon icon={icon} color={iconColor} size={48} />
             <div>
               <div style={{ fontSize: 14, fontWeight: 500, color: name ? '#3d2b1f' : '#c4a882' }}>
                 {name || '群組名稱'}
@@ -152,7 +144,7 @@ const CreateGroupPage = () => {
             color: '#fff',
           }}
         >
-          {loading ? '建立中...' : '🐱 建立群組'}
+          {loading ? '建立中...' : '建立群組'}
         </button>
       </div>
       <TabBar context="create" />

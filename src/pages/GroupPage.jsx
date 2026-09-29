@@ -7,6 +7,8 @@ import { db } from '../config/firebase'
 import { useApp } from '../context/AppContext'
 import TabBar from '../components/TabBar'
 import Avatar from '../components/Avatar'
+import GroupIcon from '../components/GroupIcon'
+import PawDecor from '../components/PawDecor'
 import { getCurrency } from '../config/currencies'
 import { computeMemberBalances } from '../utils/expenseHelpers'
 
@@ -130,7 +132,7 @@ const GroupPage = () => {
     const liffId = import.meta.env.VITE_LIFF_ID
     const url = `https://liff.line.me/${liffId}/group/${id}`
     if (navigator.share) {
-      navigator.share({ title: `${group?.emoji} ${group?.name}`, text: `${user?.name} 邀請你加入 CatSplit 分帳群組！`, url })
+      navigator.share({ title: group?.name, text: `${user?.name} 邀請你加入 CatSplit 分帳群組！`, url })
     } else {
       navigator.clipboard.writeText(url)
       alert('邀請連結已複製！\n貼到 LINE 傳給朋友吧')
@@ -164,9 +166,11 @@ const GroupPage = () => {
     return (
       <div style={{ minHeight: '100vh', background: '#fff8f4', display: 'flex', flexDirection: 'column' }}>
         <div style={{ background: 'linear-gradient(135deg, #FF8C42 0%, #FF6B1A 100%)', padding: '16px 16px 32px', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', right: 10, bottom: -10, fontSize: 64, opacity: 0.12, userSelect: 'none' }}>🐾</div>
+          <PawDecor />
           <div style={{ textAlign: 'center', paddingTop: 8 }}>
-            <div style={{ fontSize: 56, marginBottom: 8 }}>{group.emoji}</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+              <GroupIcon icon={group.icon} color={group.iconColor} size={72} onDark />
+            </div>
             <div style={{ color: '#fff', fontSize: 20, fontWeight: 500, marginBottom: 4 }}>{group.name}</div>
             <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13 }}>你被邀請加入這個群組！</div>
           </div>
@@ -204,7 +208,7 @@ const GroupPage = () => {
               background: joining ? '#e0c4b0' : '#FF8C42', color: '#fff',
             }}
           >
-            {joining ? '加入中...' : `🐱 加入「${group.name}」`}
+            {joining ? '加入中...' : `加入「${group.name}」`}
           </button>
           <button
             onClick={() => navigate('/')}
@@ -224,7 +228,7 @@ const GroupPage = () => {
 
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #FF8C42 0%, #FF6B1A 100%)', padding: '16px 16px 24px', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', right: 10, bottom: -10, fontSize: 64, opacity: 0.12, userSelect: 'none' }}>🐾</div>
+        <PawDecor />
 
         {/* 返回列 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
@@ -236,7 +240,7 @@ const GroupPage = () => {
           </button>
 
           <div style={{ flex: 1, color: '#fff', fontSize: 16, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
-            <span>{group.emoji}</span>
+            <GroupIcon icon={group.icon} color={group.iconColor} size={28} onDark />
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{group.name}</span>
           </div>
 

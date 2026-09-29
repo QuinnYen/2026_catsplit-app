@@ -6,6 +6,8 @@ import { db } from '../config/firebase'
 import { useApp } from '../context/AppContext'
 import TabBar from '../components/TabBar'
 import Avatar from '../components/Avatar'
+import GroupIcon from '../components/GroupIcon'
+import PawDecor from '../components/PawDecor'
 import { CURRENCIES, getCurrency } from '../config/currencies'
 import useExchangeRate from '../hooks/useExchangeRate'
 
@@ -110,7 +112,7 @@ const SettlePage = () => {
 
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #FF8C42 0%, #FF6B1A 100%)', padding: '16px 16px 20px', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', right: 10, bottom: -10, fontSize: 64, opacity: 0.12, userSelect: 'none' }}>🐾</div>
+        <PawDecor />
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             onClick={() => navigate(`/group/${id}`)}
@@ -127,7 +129,7 @@ const SettlePage = () => {
         {/* 總覽卡片 */}
         <div style={{ background: '#fff', borderRadius: 16, border: '0.5px solid #f0d5c0', padding: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-            <div style={{ fontSize: 28 }}>{group.emoji}</div>
+            <GroupIcon icon={group.icon} color={group.iconColor} size={40} />
             <div>
               <div style={{ fontSize: 15, fontWeight: 500, color: '#3d2b1f' }}>{group.name}</div>
               <div style={{ fontSize: 12, color: '#b08060' }}>{group.members.length} 位成員 · {expenses.length} 筆消費</div>
