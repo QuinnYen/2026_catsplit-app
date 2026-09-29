@@ -10,7 +10,7 @@ import Avatar from '../components/Avatar'
 import GroupIcon from '../components/GroupIcon'
 import PawDecor from '../components/PawDecor'
 import { getCurrency } from '../config/currencies'
-import { computeMemberBalances } from '../utils/expenseHelpers'
+import { computeMemberBalances, matchExpense } from '../utils/expenseHelpers'
 
 const GroupPage = () => {
   const { id } = useParams()
@@ -21,6 +21,8 @@ const GroupPage = () => {
   const [settlements, setSettlements] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState(null)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchText, setSearchText] = useState('')
   const [openMenuId, setOpenMenuId] = useState(null)
   const [joining, setJoining] = useState(false)
   const [loadedCover, setLoadedCover] = useState(null)
@@ -349,17 +351,44 @@ const GroupPage = () => {
           </button>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <div style={{ fontSize: 13, fontWeight: 500, color: '#b08060' }}>消費明細</div>
-          {activeCategory && (
+        {searchOpen ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff', border: '0.5px solid #f0d5c0', borderRadius: 20, padding: '6px 12px', marginBottom: 8 }}>
+            <Search size={14} color="#b08060" style={{ flexShrink: 0 }} />
+            <input
+              autoFocus
+              value={searchText}
+              onChange={e => setSearchText(e.target.value)}
+              placeholder="搜尋標題、備註、類別、付款人、金額"
+              style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'none', fontSize: 14, color: '#3d2b1f' }}
+            />
             <button
-              onClick={() => setActiveCategory(null)}
-              style={{ fontSize: 11, color: '#FF8C42', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 3 }}
+              onClick={() => { setSearchOpen(false); setSearchText('') }}
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: '#b08060', display: 'flex', alignItems: 'center', flexShrink: 0 }}
             >
-              清除篩選 <X size={11} strokeWidth={3} />
+              <X size={16} />
             </button>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ fontSize: 13, fontWeight: 500, color: '#b08060' }}>消費明細</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {activeCategory && (
+                <button
+                  onClick={() => setActiveCategory(null)}
+                  style={{ fontSize: 11, color: '#FF8C42', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 3 }}
+                >
+                  清除篩選 <X size={11} strokeWidth={3} />
+                </button>
+              )}
+              <button
+                onClick={() => setSearchOpen(true)}
+                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: '#b08060', display: 'flex', alignItems: 'center' }}
+              >
+                <Search size={16} />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* 類別篩選 chips */}
         {!loading && expenses.length > 0 && (() => {
@@ -403,21 +432,23 @@ const GroupPage = () => {
         )}
 
         {!loading && (() => {
-          const filteredExpenses = activeCategory
-            ? expenses.filter(e => (e.category || '其他') === activeCategory)
-            : expenses
+          const isSearching = searchText.trim() !== ''
+          const filteredExpenses = expenses.filter(e =>
+            (!activeCategory || (e.category || '其他') === activeCategory) &&
+            matchExpense(e, searchText, group.memberProfiles)
+          )
 
-          if (activeCategory && filteredExpenses.length === 0) return (
+          if ((activeCategory || isSearching) && filteredExpenses.length === 0) return (
             <div style={{ textAlign: 'center', padding: '48px 0' }}>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}><Search size={40} color="#e0c4b0" /></div>
-              <div style={{ color: '#b08060', fontSize: 14 }}>此類別沒有支出</div>
+              <div style={{ color: '#b08060', fontSize: 14 }}>{isSearching ? '找不到符合的支出' : '此類別沒有支出'}</div>
             </div>
           )
 
           // Merge expenses and settlements into unified timeline, sorted desc by createdAt
           const allItems = [
             ...filteredExpenses.map(e => ({ ...e, _type: 'expense' })),
-            ...(activeCategory ? [] : settlements.map(s => ({ ...s, _type: 'settlement' }))),
+            ...(activeCategory || isSearching ? [] : settlements.map(s => ({ ...s, _type: 'settlement' }))),
           ].sort((a, b) => {
             const ta = a.createdAt?.toDate?.() ?? new Date(0)
             const tb = b.createdAt?.toDate?.() ?? new Date(0)

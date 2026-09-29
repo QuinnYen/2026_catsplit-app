@@ -3,6 +3,24 @@ export const toLocalDateStr = (d) =>
 
 export const todayStr = () => toLocalDateStr(new Date())
 
+const normalizeText = (s) => String(s ?? '').normalize('NFKC').toLowerCase()
+
+/**
+ * 搜尋比對：以空白分詞，每個詞都要出現在 標題/備註/類別/付款人/金額 中（子字串）
+ */
+export const matchExpense = (expense, searchText, memberProfiles) => {
+  const tokens = normalizeText(searchText).split(/\s+/).filter(Boolean)
+  if (tokens.length === 0) return true
+  const haystack = normalizeText([
+    expense.title,
+    expense.note,
+    expense.category,
+    memberProfiles?.[expense.paidBy]?.name,
+    expense.originalAmount ?? expense.amount,
+  ].join('\n'))
+  return tokens.every(t => haystack.includes(t))
+}
+
 /**
  * 計算 splits（以原始幣別為單位）
  * @param {object} params
