@@ -136,10 +136,14 @@ const AddExpensePage = () => {
         alert('支出已儲存，但收據上傳失敗：' + (uploadErr?.code || uploadErr?.message || '未知錯誤'))
       }
 
-      const balanceDelta = {}
-      balanceDelta[`memberBalances.${paidBy}`] = increment(baseAmount)
+      // 付款人可能也在分攤名單內，需先合併再寫入，避免同一個 key 互相覆蓋
+      const netDelta = { [paidBy]: baseAmount }
       Object.entries(baseSplits).forEach(([uid, amt]) => {
-        balanceDelta[`memberBalances.${uid}`] = increment(-amt)
+        netDelta[uid] = (netDelta[uid] || 0) - amt
+      })
+      const balanceDelta = {}
+      Object.entries(netDelta).forEach(([uid, amt]) => {
+        balanceDelta[`memberBalances.${uid}`] = increment(amt)
       })
       await updateDoc(doc(db, 'groups', id), {
         totalAmount: increment(baseAmount),
