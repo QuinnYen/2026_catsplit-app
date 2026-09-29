@@ -9,6 +9,7 @@ import Avatar from '../components/Avatar'
 import GroupIcon from '../components/GroupIcon'
 import PawDecor from '../components/PawDecor'
 import { getCurrency } from '../config/currencies'
+import { deleteMyData, planDeleteMyData } from '../utils/deleteMyData'
 import catLogo from '../assets/cat-logo.webp'
 
 const GREETINGS = [
@@ -41,6 +42,7 @@ const HomePage = () => {
   const [groupsLoaded, setGroupsLoaded] = useState(false)
   const loading = authLoading || (!!user && !groupsLoaded)
   const [showArchived, setShowArchived] = useState(false)
+  const [deletingData, setDeletingData] = useState(false)
 
   useEffect(() => {
     if (authLoading) return
@@ -63,6 +65,31 @@ const HomePage = () => {
     })
     return () => unsubscribe()
   }, [user, authLoading])
+
+  const handleDeleteMyData = async () => {
+    const { toDelete, toLeave } = planDeleteMyData(groups, user.uid)
+    const owing = toLeave.filter(g => Math.abs(g.memberBalances?.[user.uid] ?? 0) >= 0.01)
+    const lines = [
+      '確定要刪除你的資料嗎？此操作無法復原。',
+      '',
+      `・退出 ${toLeave.length} 個群組（你的名稱與頭像會被移除，歷史帳目保留給其他成員）`,
+      `・刪除 ${toDelete.length} 個只有你一人的群組（含所有支出、收據與封面）`,
+    ]
+    if (owing.length > 0) {
+      lines.push('', `注意：以下群組你還有未結清的餘額，退出後其他成員的結算會少了你：`, ...owing.map(g => `  - ${g.name}`))
+    }
+    lines.push('', '完成後會自動登出。')
+    if (!confirm(lines.join('\n'))) return
+    setDeletingData(true)
+    try {
+      await deleteMyData(groups, user.uid)
+      logout()
+    } catch (error) {
+      console.error('刪除資料失敗', error)
+      alert('刪除過程發生錯誤，部分資料可能已刪除，請重試一次。若仍失敗請聯絡 support.acorn487@aleeas.com')
+      setDeletingData(false)
+    }
+  }
 
   const activeGroups = groups.filter(g => !g.archived)
   const archivedGroups = groups.filter(g => g.archived)
@@ -283,6 +310,20 @@ const HomePage = () => {
             </>
           )
         })()}
+
+        <div style={{ marginTop: 32, textAlign: 'center', fontSize: 12, color: '#c4a882', lineHeight: 2 }}>
+          <a href="/terms.html" style={{ color: '#b08060' }}>使用條款</a>
+          {' ｜ '}
+          <a href="/privacy.html" style={{ color: '#b08060' }}>隱私權政策</a>
+          {' ｜ '}
+          <button
+            onClick={handleDeleteMyData}
+            disabled={deletingData}
+            style={{ background: 'none', border: 'none', padding: 0, fontSize: 12, color: '#b08060', textDecoration: 'underline', cursor: 'pointer' }}
+          >
+            {deletingData ? '刪除中...' : '刪除我的資料'}
+          </button>
+        </div>
       </div>
 
       <TabBar context="home" />
