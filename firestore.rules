@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isMemberOf(groupId) {
+      return request.auth != null
+        && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members;
+    }
+
+    match /groups/{groupId} {
+      // 單筆讀取：登入者持有群組 ID（邀請連結）即可讀，加入前需要先看到群組
+      allow get: if request.auth != null;
+
+      // 列表查詢：只能列出自己所屬的群組（首頁用 members array-contains 查詢）
+      allow list: if request.auth != null
+        && request.auth.uid in resource.data.members;
+
+      // 建立：建立者必須是自己，且成員只有自己
+      allow create: if request.auth != null
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.members == [request.auth.uid];
+
+      // 更新：
+      //  - 成員可更新，但不能改 createdBy
+      //  - 非成員只能把自己加入 members，並且只新增自己的 memberProfiles
+      allow update: if request.auth != null && (
+        (
+          request.auth.uid in resource.data.members
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['createdBy'])
+        )
+        ||
+        (
+          !(request.auth.uid in resource.data.members)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'memberProfiles'])
+          && request.resource.data.members.hasAll(resource.data.members)
+          && request.resource.data.members.size() == resource.data.members.size() + 1
+          && request.auth.uid in request.resource.data.members
+          && request.resource.data.memberProfiles.diff(resource.data.memberProfiles).affectedKeys().hasOnly([request.auth.uid])
+        )
+      );
+
+      // 刪除：只有建立者
+      allow delete: if request.auth != null
+        && request.auth.uid == resource.data.createdBy;
+
+      match /expenses/{expenseId} {
+        allow read, write: if isMemberOf(groupId);
+      }
+
+      match /settlements/{settlementId} {
+        allow read, write: if isMemberOf(groupId);
+      }
+    }
+  }
+}

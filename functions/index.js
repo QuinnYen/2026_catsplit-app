@@ -26,7 +26,7 @@ const setCors = (req, res) => {
 }
 
 export const lineLogin = onRequest(
-  { secrets: [LINE_CHANNEL_SECRET], cors: false, region: 'asia-east1' },
+  { secrets: [LINE_CHANNEL_SECRET], cors: false, region: 'asia-east1', maxInstances: 5 },
   async (req, res) => {
     setCors(req, res)
     if (req.method === 'OPTIONS') {
@@ -60,7 +60,7 @@ export const lineLogin = onRequest(
       if (!tokenRes.ok) {
         const text = await tokenRes.text()
         console.error('LINE token exchange failed', tokenRes.status, text)
-        res.status(401).json({ error: 'token_exchange_failed', detail: text })
+        res.status(401).json({ error: 'token_exchange_failed' })
         return
       }
 
@@ -96,7 +96,7 @@ export const lineLogin = onRequest(
 )
 
 export const verifyLiffToken = onRequest(
-  { cors: false, region: 'asia-east1' },
+  { cors: false, region: 'asia-east1', maxInstances: 5 },
   async (req, res) => {
     setCors(req, res)
     if (req.method === 'OPTIONS') {
@@ -127,7 +127,7 @@ export const verifyLiffToken = onRequest(
       if (!verifyRes.ok) {
         const text = await verifyRes.text()
         console.error('LINE id_token verify failed', verifyRes.status, text)
-        res.status(401).json({ error: 'id_token_invalid', detail: text })
+        res.status(401).json({ error: 'id_token_invalid' })
         return
       }
 
