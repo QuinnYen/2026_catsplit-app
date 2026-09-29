@@ -5,16 +5,15 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import { CheckCircle2, Trash2 } from 'lucide-react'
 import { db, storage } from '../config/firebase'
 import imageCompression from 'browser-image-compression'
-import { useApp } from '../context/AppContext'
 import TabBar from '../components/TabBar'
-import ExpenseForm, { DEFAULT_CATEGORIES } from '../components/ExpenseForm'
+import ExpenseForm from '../components/ExpenseForm'
+import { DEFAULT_CATEGORIES } from '../config/expenseForm'
 import PawDecor from '../components/PawDecor'
 import useExchangeRate from '../hooks/useExchangeRate'
 import { toLocalDateStr, computeSplits, applyExchangeRate, computeMemberBalances } from '../utils/expenseHelpers'
 
 const EditExpensePage = () => {
   const { id, expenseId } = useParams()
-  const { user } = useApp()
   const navigate = useNavigate()
 
   const [group, setGroup] = useState(null)
@@ -169,7 +168,7 @@ const EditExpensePage = () => {
       return { receiptUrl: await getDownloadURL(snapshot.ref) }
     }
     if (removeExistingReceipt && existingReceiptUrl) {
-      try { await deleteObject(ref(storage, existingReceiptUrl)) } catch {}
+      try { await deleteObject(ref(storage, existingReceiptUrl)) } catch { /* 檔案可能已不存在，忽略 */ }
       return { receiptUrl: null }
     }
     return {}

@@ -1,18 +1,9 @@
-import { Check, Camera } from 'lucide-react'
+import { useState } from 'react'
+import { Check, Camera, ChevronDown } from 'lucide-react'
 import Avatar from './Avatar'
 import { CURRENCIES, getCurrency } from '../config/currencies'
 import { todayStr } from '../utils/expenseHelpers'
-
-const DEFAULT_CATEGORIES = ['餐飲', '交通', '住宿', '購物', '娛樂', '日用品', '其他']
-export { DEFAULT_CATEGORIES }
-
-export const SPLIT_TYPES = [
-  { key: 'equal',      label: '均分' },
-  { key: 'subset',     label: '部分人' },
-  { key: 'shares',     label: '依份數' },
-  { key: 'percentage', label: '依比例' },
-  { key: 'custom',     label: '自訂金額' },
-]
+import { DEFAULT_CATEGORIES, SPLIT_TYPES } from '../config/expenseForm'
 
 const inputStyle = {
   width: '100%', border: '0.5px solid #f0d5c0', borderRadius: 10,
@@ -47,6 +38,50 @@ const Checkbox = ({ checked }) => (
   </div>
 )
 
+const PayerSelect = ({ members, value, onChange }) => {
+  const [open, setOpen] = useState(false)
+  const current = members.find(([uid]) => uid === value)?.[1]
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 12, cursor: 'pointer', border: 'none',
+          background: '#fff3ec', outline: '1.5px solid #FF8C42',
+        }}
+      >
+        <Avatar src={current?.avatar} name={current?.name} size={28} />
+        <span style={{ fontSize: 14, color: '#3d2b1f', fontWeight: 500, flex: 1, textAlign: 'left' }}>{current?.name || '選擇付款人'}</span>
+        <ChevronDown size={16} color="#FF8C42" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
+      </button>
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 10 }} />
+          <div style={{
+            position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 11, maxHeight: 240, overflowY: 'auto',
+            background: '#fff', borderRadius: 12, border: '0.5px solid #f0d5c0', boxShadow: '0 4px 16px rgba(255,140,66,0.18)', padding: 4,
+          }}>
+            {members.map(([uid, profile]) => (
+              <button
+                key={uid}
+                onClick={() => { onChange(uid); setOpen(false) }}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, cursor: 'pointer', border: 'none',
+                  background: value === uid ? '#fff3ec' : 'transparent',
+                }}
+              >
+                <Avatar src={profile.avatar} name={profile.name} size={28} />
+                <span style={{ fontSize: 14, color: '#3d2b1f', fontWeight: value === uid ? 500 : 400, flex: 1, textAlign: 'left' }}>{profile.name}</span>
+                {value === uid && <Check size={16} color="#FF8C42" strokeWidth={3} />}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 const ExpenseForm = ({
   // 欄位值
   title, setTitle,
@@ -74,7 +109,7 @@ const ExpenseForm = ({
   customTotal,
   effectiveUids,
   // 收據圖片
-  receiptFile, setReceiptFile,
+  setReceiptFile,
   receiptPreview, setReceiptPreview,
   existingReceiptUrl,
   removeExistingReceipt, setRemoveExistingReceipt,
@@ -208,23 +243,7 @@ const ExpenseForm = ({
       {/* 誰付錢 */}
       <div style={cardStyle}>
         <div style={labelStyle}>誰付錢</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {members.map(([uid, profile]) => (
-            <button
-              key={uid}
-              onClick={() => setPaidBy(uid)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', border: 'none', transition: 'all 0.15s',
-                background: paidBy === uid ? '#fff3ec' : '#fff8f4',
-                outline: paidBy === uid ? '1.5px solid #FF8C42' : '0.5px solid #f0d5c0',
-              }}
-            >
-              <Avatar src={profile.avatar} name={profile.name} size={32} />
-              <span style={{ fontSize: 14, color: '#3d2b1f', fontWeight: paidBy === uid ? 500 : 400, flex: 1, textAlign: 'left' }}>{profile.name}</span>
-              {paidBy === uid && <Check size={16} color="#FF8C42" strokeWidth={3} />}
-            </button>
-          ))}
-        </div>
+        <PayerSelect members={members} value={paidBy} onChange={setPaidBy} />
         <button
           onClick={() => setPayerExcluded(v => !v)}
           style={{
@@ -439,7 +458,6 @@ const ExpenseForm = ({
             }}>
               <Camera size={28} color="#b08060" />
               <span style={{ fontSize: 13 }}>點擊上傳收據照片</span>
-              <span style={{ fontSize: 11, color: '#c4a882' }}>自動壓縮，省流量</span>
               <input
                 type="file"
                 accept="image/*"

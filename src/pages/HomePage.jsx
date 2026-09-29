@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
-import { Users, Wallet, Calculator, Check } from 'lucide-react'
+import { Users, Wallet, Calculator, Check, Moon, Cat, BedDouble, Sun, PawPrint, Coffee, Utensils, Fish, Cookie, CloudSun, Sunset, Soup } from 'lucide-react'
 import { db } from '../config/firebase'
 import { useApp } from '../context/AppContext'
 import TabBar from '../components/TabBar'
@@ -11,19 +11,40 @@ import PawDecor from '../components/PawDecor'
 import { getCurrency } from '../config/currencies'
 import catLogo from '../assets/cat-logo.webp'
 
+const GREETINGS = [
+  // 0-4 深夜
+  [{ Icon: Moon, text: '喵～還不睡嗎？' }, { Icon: Cat, text: '夜貓子報到！' }, { Icon: BedDouble, text: '這麼晚還在記帳，辛苦了' }],
+  // 5-10 早上
+  [{ Icon: Sun, text: '早安喵！' }, { Icon: PawPrint, text: '起床啦，今天也要好好算帳' }, { Icon: Coffee, text: '早安～先來杯咖啡吧' }],
+  // 11-13 中午
+  [{ Icon: Utensils, text: '午安！吃飽了嗎？' }, { Icon: Fish, text: '中午啦，來碗貓飯' }, { Icon: PawPrint, text: '午餐錢記了嗎？' }],
+  // 14-17 下午
+  [{ Icon: Cookie, text: '下午好～來點小點心' }, { Icon: CloudSun, text: '喵～午後陽光正好' }, { Icon: Coffee, text: '下午茶時間，誰請客？' }],
+  // 18-21 晚上
+  [{ Icon: Sunset, text: '晚安前先來對帳' }, { Icon: Soup, text: '晚餐吃得開心嗎？' }, { Icon: PawPrint, text: '辛苦了一天，回來啦' }],
+  // 22-23 夜晚
+  [{ Icon: Moon, text: '夜深了，記完帳就睡吧' }, { Icon: BedDouble, text: '喵～該準備睡覺囉' }, { Icon: Cat, text: '晚安前的最後一筆帳' }],
+]
+
+const getGreeting = () => {
+  const h = new Date().getHours()
+  const bucket = h < 5 ? 0 : h < 11 ? 1 : h < 14 ? 2 : h < 18 ? 3 : h < 22 ? 4 : 5
+  const options = GREETINGS[bucket]
+  return options[Math.floor(Math.random() * options.length)]
+}
+
 const HomePage = () => {
   const { user, loading: authLoading, loginWithLine, logout } = useApp()
   const navigate = useNavigate()
+  const [{ Icon: GreetingIcon, text: greetingText }] = useState(getGreeting)
   const [groups, setGroups] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [groupsLoaded, setGroupsLoaded] = useState(false)
+  const loading = authLoading || (!!user && !groupsLoaded)
   const [showArchived, setShowArchived] = useState(false)
 
   useEffect(() => {
     if (authLoading) return
-    if (!user) {
-      setLoading(false)
-      return
-    }
+    if (!user) return
     const q = query(
       collection(db, 'groups'),
       where('members', 'array-contains', user.uid),
@@ -35,10 +56,10 @@ const HomePage = () => {
         ...doc.data()
       }))
       setGroups(data)
-      setLoading(false)
+      setGroupsLoaded(true)
     }, (error) => {
       console.error('Firestore 讀取失敗:', error)
-      setLoading(false)
+      setGroupsLoaded(true)
     })
     return () => unsubscribe()
   }, [user, authLoading])
@@ -111,7 +132,9 @@ const HomePage = () => {
               style={{ background: '#ffe0c8', border: '2px solid rgba(255,255,255,0.6)' }}
             />
             <div>
-              <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11 }}>歡迎回來</div>
+              <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <GreetingIcon size={12} />{greetingText}
+              </div>
               <div style={{ color: '#fff', fontSize: 14, fontWeight: 500 }}>{user?.name}</div>
             </div>
           </div>
