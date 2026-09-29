@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { collection, addDoc, Timestamp, doc, getDoc, updateDoc, increment } from 'firebase/firestore'
+import { collection, addDoc, Timestamp, serverTimestamp, doc, getDoc, updateDoc, increment } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { CheckCircle2 } from 'lucide-react'
 import { db, storage } from '../config/firebase'
@@ -125,6 +125,7 @@ const AddExpensePage = () => {
         ...(splitType === 'shares' && { shares }),
         createdBy: user.uid,
         createdAt: Timestamp.fromDate(new Date(expenseDate)),
+        addedAt: serverTimestamp(),
       })
 
       try {

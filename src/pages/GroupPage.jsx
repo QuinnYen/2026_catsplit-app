@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { doc, collection, onSnapshot, orderBy, query, deleteDoc, getDocs, updateDoc, arrayUnion } from 'firebase/firestore'
 
-import { Check, Plus, Calculator, X, Receipt, Search, Banknote, Trash2, Pencil, MoreVertical, ChevronRight } from 'lucide-react'
+import { Check, Plus, Calculator, X, Receipt, Search, Trash2, Pencil, MoreVertical, ChevronRight } from 'lucide-react'
 import { db } from '../config/firebase'
 import { useApp } from '../context/AppContext'
 import TabBar from '../components/TabBar'
@@ -24,6 +24,7 @@ const GroupPage = () => {
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchText, setSearchText] = useState('')
   const [openMenuId, setOpenMenuId] = useState(null)
+  const [detailSettlementId, setDetailSettlementId] = useState(null)
   const [joining, setJoining] = useState(false)
   const [loadedCover, setLoadedCover] = useState(null)
 
@@ -232,6 +233,8 @@ const GroupPage = () => {
   }
 
   const profiles = Object.values(group.memberProfiles || {})
+  // 從即時清單取值，刪除後會自動變成 undefined 而關閉彈窗
+  const detailSettlement = settlements.find(s => s.id === detailSettlementId)
 
   return (
     <div style={{ minHeight: '100vh', background: '#fff8f4', display: 'flex', flexDirection: 'column' }}>
@@ -453,15 +456,20 @@ const GroupPage = () => {
             </div>
           )
 
-          // Merge expenses and settlements into unified timeline, sorted desc by createdAt
+          // Merge expenses and settlements into unified timeline: by date (createdAt) desc,
+          // then within the same day by actual add time (addedAt, falling back to createdAt) desc
+          const dayKey = (item) => {
+            const d = item.createdAt?.toDate?.()
+            return d ? d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate() : 0
+          }
+          // addedAt 為 null 代表剛寫入、伺服器時間尚未回填，視為最新
+          const addTime = (item) => item.addedAt === null
+            ? Infinity
+            : (item.addedAt?.toMillis?.() ?? item.createdAt?.toMillis?.() ?? 0)
           const allItems = [
             ...filteredExpenses.map(e => ({ ...e, _type: 'expense' })),
             ...(activeCategory || isSearching ? [] : settlements.map(s => ({ ...s, _type: 'settlement' }))),
-          ].sort((a, b) => {
-            const ta = a.createdAt?.toDate?.() ?? new Date(0)
-            const tb = b.createdAt?.toDate?.() ?? new Date(0)
-            return tb - ta
-          })
+          ].sort((a, b) => dayKey(b) - dayKey(a) || addTime(b) - addTime(a))
 
           if (allItems.length === 0) return null
 
@@ -495,17 +503,21 @@ const GroupPage = () => {
                         return (
                           <div
                             key={item.id}
-                            style={{ background: '#f0faf0', borderRadius: 14, border: '0.5px solid #c8e6c9', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}
+                            onClick={() => setDetailSettlementId(item.id)}
+                            style={{ background: '#f0faf0', borderRadius: 14, border: '0.5px solid #c8e6c9', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' }}
                           >
-                            <div style={{ width: 40, height: 40, background: '#e8f5e9', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                              <Banknote size={20} color="#4caf50" />
-                            </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 13, fontWeight: 500, color: '#2e7d32', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {from?.name} 轉給 {to?.name}
+                              <div style={{ display: 'flex', fontSize: 13, fontWeight: 500, color: '#2e7d32', marginBottom: 2 }}>
+                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{from?.name}</span>
+                                <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>&nbsp;轉給</span>
                               </div>
-                              <div style={{ fontSize: 11, color: '#66bb6a' }}>
-                                {item.paymentMethod}{item.note ? ` · ${item.note}` : ''}
+                              <div style={{ display: 'flex', fontSize: 13, fontWeight: 500, color: '#2e7d32' }}>
+                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{to?.name}</span>
+                                {item.paymentMethod && (
+                                  <span style={{ flexShrink: 0, whiteSpace: 'nowrap', marginLeft: 6, fontSize: 11, fontWeight: 400, color: '#66bb6a' }}>
+                                    {item.paymentMethod}
+                                  </span>
+                                )}
                               </div>
                             </div>
                             <div style={{ flexShrink: 0, textAlign: 'right' }}>
@@ -513,12 +525,7 @@ const GroupPage = () => {
                                 {getCurrency(item.currency || group.baseCurrency).symbol} {item.amount.toLocaleString()}
                               </div>
                             </div>
-                            <button
-                              onClick={() => handleDeleteSettlement(item.id, group)}
-                              style={{ background: '#ffebee', border: 'none', borderRadius: 8, padding: '6px 8px', cursor: 'pointer', flexShrink: 0, color: '#e53935', display: 'flex', alignItems: 'center' }}
-                            >
-                              <Trash2 size={14} />
-                            </button>
+                            <ChevronRight size={16} color="#66bb6a" style={{ flexShrink: 0 }} />
                           </div>
                         )
                       }
@@ -532,12 +539,14 @@ const GroupPage = () => {
                             onTouchStart={e => e.currentTarget.style.opacity = '0.75'}
                             onTouchEnd={e => e.currentTarget.style.opacity = '1'}
                           >
-                            <div style={{ width: 40, height: 40, background: '#fff3ec', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 500, color: '#FF6B1A', flexShrink: 0, textAlign: 'center', padding: '0 4px' }}>
-                              {item.category || '其他'}
-                            </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 14, fontWeight: 500, color: '#3d2b1f', marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {item.title}
+                              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 3 }}>
+                                <span style={{ fontSize: 12, fontWeight: 500, color: '#FF6B1A', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                                  {item.category || '其他'}
+                                </span>
+                                <span style={{ fontSize: 14, fontWeight: 500, color: '#3d2b1f', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {item.title}
+                                </span>
                               </div>
                               <div style={{ fontSize: 12, color: '#b08060', display: 'flex' }}>
                                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -599,6 +608,55 @@ const GroupPage = () => {
           )
         })()}
       </div>
+
+      {detailSettlement && (
+        <div
+          onClick={() => setDetailSettlementId(null)}
+          style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ width: '100%', maxWidth: 480, background: '#fff', borderRadius: '20px 20px 0 0', padding: 20, paddingBottom: 28 }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div style={{ fontSize: 15, fontWeight: 500, color: '#3d2b1f' }}>轉帳明細</div>
+              <button
+                onClick={() => setDetailSettlementId(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}
+              >
+                <X size={20} color="#b08060" />
+              </button>
+            </div>
+
+            <div style={{ textAlign: 'center', fontSize: 26, fontWeight: 500, color: '#2e7d32', marginBottom: 16 }}>
+              {getCurrency(detailSettlement.currency || group.baseCurrency).symbol} {detailSettlement.amount.toLocaleString()}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
+              {[
+                ['付款方', group.memberProfiles?.[detailSettlement.from]?.name],
+                ['收款方', group.memberProfiles?.[detailSettlement.to]?.name],
+                ['付款方式', detailSettlement.paymentMethod],
+                ['備註', detailSettlement.note],
+                ['轉帳時間', detailSettlement.createdAt?.toDate?.().toLocaleString('zh-TW')],
+                ['記錄人', group.memberProfiles?.[detailSettlement.settledBy]?.name],
+              ].filter(([, v]) => v).map(([label, value]) => (
+                <div key={label} style={{ display: 'flex', gap: 12, fontSize: 13 }}>
+                  <div style={{ width: 64, flexShrink: 0, color: '#b08060' }}>{label}</div>
+                  <div style={{ flex: 1, minWidth: 0, color: '#3d2b1f', wordBreak: 'break-word' }}>{value}</div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => handleDeleteSettlement(detailSettlement.id, group)}
+              style={{ width: '100%', padding: '12px 0', borderRadius: 12, border: '1px solid #ffcdd2', background: '#fff', color: '#e57373', fontSize: 14, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            >
+              <Trash2 size={14} /> 刪除這筆轉帳
+            </button>
+          </div>
+        </div>
+      )}
 
       <TabBar context="group" groupId={id} />
     </div>
