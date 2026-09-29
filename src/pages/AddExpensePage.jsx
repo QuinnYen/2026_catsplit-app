@@ -162,7 +162,7 @@ const AddExpensePage = () => {
                 type: 'box', layout: 'vertical', paddingAll: '16px',
                 backgroundColor: '#FF8C42',
                 contents: [{
-                  type: 'text', text: 'CatSplit 新增支出', color: '#ffffff', size: 'sm', weight: 'bold',
+                  type: 'text', text: '貓咪分帳 CatSplit 新增支出', color: '#ffffff', size: 'sm', weight: 'bold',
                 }],
               },
               body: {

@@ -132,7 +132,7 @@ const GroupPage = () => {
     const liffId = import.meta.env.VITE_LIFF_ID
     const url = `https://liff.line.me/${liffId}/group/${id}`
     if (navigator.share) {
-      navigator.share({ title: group?.name, text: `${user?.name} 邀請你加入 CatSplit 分帳群組！`, url })
+      navigator.share({ title: group?.name, text: `${user?.name} 邀請你加入 貓咪分帳 CatSplit 的分帳群組！`, url })
     } else {
       navigator.clipboard.writeText(url)
       alert('邀請連結已複製！\n貼到 LINE 傳給朋友吧')

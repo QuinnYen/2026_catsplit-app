@@ -17,7 +17,7 @@ import AuthCallbackPage from './pages/AuthCallbackPage'
 const LoadingScreen = () => (
   <div className="flex items-center justify-center h-screen bg-gray-50">
     <div className="text-center">
-      <img src={catLogo} alt="CatSplit" style={{ width: 64, height: 64, marginBottom: 16 }} />
+      <img src={catLogo} alt="貓咪分帳 CatSplit" style={{ width: 64, height: 64, marginBottom: 16 }} />
       <p className="text-gray-500">載入中...</p>
     </div>
   </div>
@@ -25,7 +25,7 @@ const LoadingScreen = () => (
 
 const LoginScreen = ({ onLogin }) => (
   <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #fff8f4 0%, #ffe8d6 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px' }}>
-    <img src={catLogo} alt="CatSplit" style={{ width: 120, height: 120, marginBottom: 16 }} />
+    <img src={catLogo} alt="貓咪分帳 CatSplit" style={{ width: 120, height: 120, marginBottom: 16 }} />
     <div style={{ fontSize: 24, fontWeight: 700, color: '#3d2b1f', marginBottom: 8 }}>貓咪分帳 CatSplit</div>
     <div style={{ fontSize: 14, color: '#b08060', marginBottom: 48, textAlign: 'center', lineHeight: 1.6 }}>
       貓咪幫你分帳，輕鬆搞定朋友借錢
