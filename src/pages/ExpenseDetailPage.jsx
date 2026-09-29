@@ -45,7 +45,6 @@ const ExpenseDetailPage = () => {
     )
   }
 
-  const isPayer = user?.uid === expense.paidBy
   const baseCurr = getCurrency(group.baseCurrency || 'TWD')
   const expCurr = getCurrency(expense.currency || group.baseCurrency || 'TWD')
   const hasFx = expense.currency && expense.currency !== (group.baseCurrency || 'TWD')
@@ -70,14 +69,12 @@ const ExpenseDetailPage = () => {
             style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.9)', fontSize: 26, cursor: 'pointer', lineHeight: 1, padding: 0 }}
           >‹</button>
           <div style={{ flex: 1, color: '#fff', fontSize: 16, fontWeight: 500 }}>支出明細</div>
-          {isPayer && (
-            <button
-              onClick={() => navigate(`/group/${id}/expense/${expenseId}/edit`)}
-              style={{ background: 'rgba(255,255,255,0.25)', color: '#fff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: 20, padding: '5px 14px', fontSize: 13, cursor: 'pointer' }}
-            >
-              編輯
-            </button>
-          )}
+          <button
+            onClick={() => navigate(`/group/${id}/expense/${expenseId}/edit`)}
+            style={{ background: 'rgba(255,255,255,0.25)', color: '#fff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: 20, padding: '5px 14px', fontSize: 13, cursor: 'pointer' }}
+          >
+            編輯
+          </button>
         </div>
       </div>
 

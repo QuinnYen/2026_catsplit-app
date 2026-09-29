@@ -236,7 +236,10 @@ const EditGroupPage = () => {
 
         {/* 群組名稱 */}
         <div style={{ background: '#fff', borderRadius: 16, border: '0.5px solid #f0d5c0', padding: 14 }}>
-          <div style={{ fontSize: 12, fontWeight: 500, color: '#b08060', marginBottom: 8 }}>群組名稱</div>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: '#b08060' }}>群組名稱</div>
+            <div style={{ fontSize: 11, color: '#c4a882' }}>{name.length} / 20</div>
+          </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <input
               type="text"
@@ -257,7 +260,6 @@ const EditGroupPage = () => {
               {saving ? '儲存中' : '儲存'}
             </button>
           </div>
-          <div style={{ textAlign: 'right', fontSize: 11, color: '#c4a882', marginTop: 6 }}>{name.length} / 20</div>
         </div>
 
         {/* 群組圖示 */}
