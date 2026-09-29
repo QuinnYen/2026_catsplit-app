@@ -40,7 +40,7 @@ const AddExpensePage = () => {
 
   const safeIsInClient = () => { try { return liffInstance?.isInClient() ?? false } catch { return false } }
 
-  const { exchangeRate, setExchangeRate, rateLoading } = useExchangeRate(currency, baseCurrency)
+  const { exchangeRate, setManualRate, rateLoading, rateError, rateManual } = useExchangeRate(currency, baseCurrency)
 
   useEffect(() => {
     const fetchGroup = async () => {
@@ -81,6 +81,7 @@ const AddExpensePage = () => {
   const isValid = () => {
     if (!title.trim()) return false
     if (!amount || parseFloat(amount) <= 0) return false
+    if (currency !== baseCurrency && (rateLoading || !(exchangeRate > 0))) return false
     if (splitType === 'custom' && Math.abs(customTotal - parseFloat(amount)) > 0.01) return false
     if (splitType === 'percentage' && Math.abs(percentageTotal - 100) > 0.01) return false
     if (splitType === 'subset') {
@@ -235,8 +236,8 @@ const AddExpensePage = () => {
           isEditingCategory={isEditingCategory} setIsEditingCategory={setIsEditingCategory}
           expenseDate={expenseDate} setExpenseDate={setExpenseDate}
           currency={currency} setCurrency={setCurrency}
-          exchangeRate={exchangeRate} setExchangeRate={setExchangeRate}
-          rateLoading={rateLoading}
+          exchangeRate={exchangeRate} setExchangeRate={setManualRate}
+          rateLoading={rateLoading} rateError={rateError} rateManual={rateManual}
           baseCurrency={baseCurrency}
           amount={amount} setAmount={setAmount}
           paidBy={paidBy} setPaidBy={setPaidBy}

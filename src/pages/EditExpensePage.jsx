@@ -39,7 +39,9 @@ const EditExpensePage = () => {
   const [removeExistingReceipt, setRemoveExistingReceipt] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  const { exchangeRate, setExchangeRate, rateLoading } = useExchangeRate(currency, baseCurrency)
+  const [savedRate, setSavedRate] = useState(null)
+
+  const { exchangeRate, setManualRate, rateLoading, rateError, rateManual } = useExchangeRate(currency, baseCurrency, savedRate)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -60,7 +62,7 @@ const EditExpensePage = () => {
       setTitle(expense.title)
       setAmount(String(expense.originalAmount ?? expense.amount))
       setCurrency(expense.currency || base)
-      setExchangeRate(expense.exchangeRate ?? 1)
+      setSavedRate({ currency: expense.currency || base, rate: expense.exchangeRate ?? 1 })
       setPaidBy(expense.paidBy)
       setPayerExcluded(expense.payerExcluded || false)
       setSplitType(expense.splitType || 'equal')
@@ -135,6 +137,7 @@ const EditExpensePage = () => {
   const isValid = () => {
     if (!title.trim()) return false
     if (!amount || parseFloat(amount) <= 0) return false
+    if (currency !== baseCurrency && (rateLoading || !(exchangeRate > 0))) return false
     if (splitType === 'custom' && Math.abs(customTotal - parseFloat(amount)) > 0.01) return false
     if (splitType === 'percentage' && Math.abs(percentageTotal - 100) > 0.01) return false
     if (splitType === 'subset') {
@@ -246,8 +249,8 @@ const EditExpensePage = () => {
           isEditingCategory={isEditingCategory} setIsEditingCategory={setIsEditingCategory}
           expenseDate={expenseDate} setExpenseDate={setExpenseDate}
           currency={currency} setCurrency={setCurrency}
-          exchangeRate={exchangeRate} setExchangeRate={setExchangeRate}
-          rateLoading={rateLoading}
+          exchangeRate={exchangeRate} setExchangeRate={setManualRate}
+          rateLoading={rateLoading} rateError={rateError} rateManual={rateManual}
           baseCurrency={baseCurrency}
           amount={amount} setAmount={setAmount}
           paidBy={paidBy} setPaidBy={setPaidBy}

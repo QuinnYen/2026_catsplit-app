@@ -56,7 +56,7 @@ const ExpenseForm = ({
   expenseDate, setExpenseDate,
   currency, setCurrency,
   exchangeRate, setExchangeRate,
-  rateLoading,
+  rateLoading, rateError, rateManual,
   baseCurrency,
   amount, setAmount,
   paidBy, setPaidBy,
@@ -152,19 +152,33 @@ const ExpenseForm = ({
             ))}
           </div>
           {currency !== baseCurrency && (
-            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 11, color: '#b08060' }}>匯率 1 {currency} =</span>
-              {rateLoading ? (
-                <span style={{ fontSize: 11, color: '#c4a882' }}>抓取中...</span>
-              ) : (
-                <input
-                  type="number"
-                  value={exchangeRate ?? ''}
-                  onChange={e => setExchangeRate(parseFloat(e.target.value) || null)}
-                  style={{ width: 90, border: '0.5px solid #f0d5c0', borderRadius: 8, padding: '4px 8px', fontSize: 12, color: '#3d2b1f', outline: 'none', background: '#fff8f4' }}
-                />
+            <div style={{ marginTop: 10, padding: 10, borderRadius: 10, background: '#fff8f4', border: '0.5px solid #f0d5c0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 12, color: '#b08060' }}>匯率 1 {currency} =</span>
+                {rateLoading ? (
+                  <span style={{ fontSize: 12, color: '#c4a882' }}>抓取中...</span>
+                ) : (
+                  <input
+                    type="number"
+                    step="any"
+                    min="0"
+                    value={exchangeRate ?? ''}
+                    onChange={e => setExchangeRate(parseFloat(e.target.value) || null)}
+                    placeholder="請輸入"
+                    style={{ width: 100, border: `0.5px solid ${rateError ? '#e05a4f' : '#FF8C42'}`, borderRadius: 8, padding: '6px 8px', fontSize: 14, color: '#3d2b1f', outline: 'none', background: '#fff' }}
+                  />
+                )}
+                <span style={{ fontSize: 12, color: '#b08060' }}>{baseCurrency}</span>
+              </div>
+              {!rateLoading && (
+                <div style={{ marginTop: 6, fontSize: 11, color: rateError ? '#e05a4f' : '#c4a882' }}>
+                  {rateError
+                    ? '匯率抓取失敗，請手動輸入'
+                    : rateManual
+                      ? '已手動修改匯率'
+                      : '自動帶入參考匯率，可直接修改'}
+                </div>
               )}
-              <span style={{ fontSize: 11, color: '#b08060' }}>{baseCurrency}</span>
             </div>
           )}
         </div>
