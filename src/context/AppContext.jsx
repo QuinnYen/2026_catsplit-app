@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { signInWithCustomToken, signOut } from 'firebase/auth'
+import { signInWithCustomToken, signOut, onAuthStateChanged } from 'firebase/auth'
 import { auth } from '../config/firebase'
 import { initLiff } from '../config/liff'
 
@@ -112,6 +112,14 @@ export const AppProvider = ({ children }) => {
           } catch (e) {
             localStorage.removeItem(STORAGE_KEY)
           }
+          // 等 Firebase Auth 自動恢復登入狀態完成，避免頁面在 request.auth 還是
+          // null 時就發出 Firestore 查詢而被規則拒絕
+          keepLoading = true
+          const unsubscribe = onAuthStateChanged(auth, () => {
+            unsubscribe()
+            setLoading(false)
+          })
+          return
         }
       } finally {
         if (!keepLoading) setLoading(false)
