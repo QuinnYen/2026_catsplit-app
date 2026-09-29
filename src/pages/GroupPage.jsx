@@ -231,7 +231,7 @@ const GroupPage = () => {
         background: group.coverUrl
           ? `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.5)), url(${group.coverUrl}) center / cover`
           : 'linear-gradient(135deg, #FF8C42 0%, #FF6B1A 100%)',
-        padding: '16px 16px 24px', position: 'relative', overflow: 'hidden',
+        padding: '16px 16px 24px', position: 'relative', overflow: 'hidden', fontWeight: 700,
       }}>
         {!group.coverUrl && <PawDecor />}
 
@@ -244,27 +244,27 @@ const GroupPage = () => {
             ‹
           </button>
 
-          <div style={{ flex: 1, color: '#fff', fontSize: 16, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
+          <div style={{ flex: 1, color: '#fff', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
             <GroupIcon icon={group.icon} color={group.iconColor} size={28} onDark />
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{group.name}</span>
           </div>
 
           <button
             onClick={handleInvite}
-            style={{ background: 'rgba(255,255,255,0.25)', color: '#fff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: 20, padding: '5px 12px', fontSize: 12, cursor: 'pointer', flexShrink: 0 }}
+            style={{ background: 'rgba(255,255,255,0.25)', color: '#fff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: 20, padding: '5px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}
           >
             邀請
           </button>
           <button
             onClick={handleExportCSV}
             disabled={expenses.length === 0}
-            style={{ background: 'rgba(255,255,255,0.25)', color: '#fff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: 20, padding: '5px 12px', fontSize: 12, cursor: expenses.length === 0 ? 'not-allowed' : 'pointer', flexShrink: 0, opacity: expenses.length === 0 ? 0.5 : 1 }}
+            style={{ background: 'rgba(255,255,255,0.25)', color: '#fff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: 20, padding: '5px 12px', fontSize: 12, fontWeight: 700, cursor: expenses.length === 0 ? 'not-allowed' : 'pointer', flexShrink: 0, opacity: expenses.length === 0 ? 0.5 : 1 }}
           >
             匯出
           </button>
           <button
             onClick={() => navigate(`/group/${id}/edit`)}
-            style={{ background: 'rgba(255,255,255,0.25)', color: '#fff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: 20, padding: '5px 12px', fontSize: 12, cursor: 'pointer', flexShrink: 0 }}
+            style={{ background: 'rgba(255,255,255,0.25)', color: '#fff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: 20, padding: '5px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}
           >
             編輯
           </button>
@@ -290,7 +290,7 @@ const GroupPage = () => {
         {/* 總金額卡片 */}
         <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 16, padding: 14, border: '1px solid rgba(255,255,255,0.3)' }}>
           <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, marginBottom: 4 }}>總支出</div>
-          <div style={{ color: '#fff', fontSize: 24, fontWeight: 500 }}>
+          <div style={{ color: '#fff', fontSize: 24, fontWeight: 700 }}>
             {getCurrency(group.baseCurrency).symbol} {total.toLocaleString()}
           </div>
           <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 4 }}>

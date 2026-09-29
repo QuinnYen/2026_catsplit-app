@@ -7,7 +7,7 @@ import { db, storage } from '../config/firebase'
 import { useApp } from '../context/AppContext'
 import Avatar from '../components/Avatar'
 import GroupIconPicker from '../components/GroupIconPicker'
-import CropModal, { COVER_ASPECT } from '../components/CropModal'
+import CropModal from '../components/CropModal'
 import PawDecor from '../components/PawDecor'
 
 const EditGroupPage = () => {
@@ -274,12 +274,8 @@ const EditGroupPage = () => {
         {/* 群組封面 */}
         <div style={{ background: '#fff', borderRadius: 16, border: '0.5px solid #f0d5c0', padding: 14 }}>
           <div style={{ fontSize: 12, fontWeight: 500, color: '#b08060', marginBottom: 10 }}>群組封面</div>
-          <div style={{
-            width: '100%', aspectRatio: COVER_ASPECT, borderRadius: 12, overflow: 'hidden', marginBottom: 10,
-            background: group.coverUrl ? `url(${group.coverUrl}) center / cover` : 'linear-gradient(135deg, #FF8C42 0%, #FF6B1A 100%)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.85)', fontSize: 12,
-          }}>
-            {coverSaving ? '處理中...' : !group.coverUrl && '尚未設定封面'}
+          <div style={{ fontSize: 13, color: '#3d2b1f', marginBottom: 10 }}>
+            {coverSaving ? '處理中...' : group.coverUrl ? '已設定封面' : '尚未設定封面'}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <label style={{
