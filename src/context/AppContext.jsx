@@ -1,4 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
+import { signInWithCustomToken, signOut } from 'firebase/auth'
+import { auth } from '../config/firebase'
 import { initLiff } from '../config/liff'
 
 const AppContext = createContext(null)
@@ -13,6 +15,7 @@ const stateStore = {
   remove: () => localStorage.removeItem(OAUTH_STATE_KEY),
 }
 const TOKEN_EXCHANGE_URL = import.meta.env.VITE_TOKEN_EXCHANGE_URL
+const VERIFY_LIFF_TOKEN_URL = TOKEN_EXCHANGE_URL?.replace('/lineLogin', '/verifyLiffToken')
 
 const buildRedirectUri = () => `${window.location.origin}/auth/callback`
 
@@ -67,6 +70,20 @@ export const AppProvider = ({ children }) => {
           setLiffInstance(liff)
           if (liff.isLoggedIn()) {
             const profile = await liff.getProfile()
+            const idToken = liff.getIDToken()
+            if (idToken && VERIFY_LIFF_TOKEN_URL) {
+              const res = await fetch(VERIFY_LIFF_TOKEN_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken }),
+              })
+              if (res.ok) {
+                const data = await res.json()
+                await signInWithCustomToken(auth, data.firebaseToken)
+              } else {
+                console.error('verifyLiffToken 失敗', await res.text())
+              }
+            }
             const u = {
               uid: profile.userId,
               name: profile.displayName,
@@ -121,6 +138,7 @@ export const AppProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem(STORAGE_KEY)
     if (liffInstance?.isLoggedIn()) liffInstance.logout()
+    signOut(auth).catch(() => {})
     setUser(null)
   }
 
@@ -146,6 +164,7 @@ export const AppProvider = ({ children }) => {
     }
 
     const data = await res.json()
+    await signInWithCustomToken(auth, data.firebaseToken)
     const u = {
       uid: data.userId,
       name: data.displayName,

@@ -1,5 +1,9 @@
 import { onRequest } from 'firebase-functions/v2/https'
 import { defineSecret } from 'firebase-functions/params'
+import { initializeApp } from 'firebase-admin/app'
+import { getAuth } from 'firebase-admin/auth'
+
+initializeApp()
 
 const LINE_CHANNEL_ID = '2010062826'
 const LINE_CHANNEL_SECRET = defineSecret('LINE_CHANNEL_SECRET')
@@ -76,14 +80,67 @@ export const lineLogin = onRequest(
       }
 
       const profile = await profileRes.json()
+      const firebaseToken = await getAuth().createCustomToken(profile.userId)
       res.json({
         userId: profile.userId,
         displayName: profile.displayName,
         pictureUrl: profile.pictureUrl,
         idToken: id_token,
+        firebaseToken,
       })
     } catch (e) {
       console.error('lineLogin error', e)
+      res.status(500).json({ error: 'internal_error' })
+    }
+  }
+)
+
+export const verifyLiffToken = onRequest(
+  { cors: false, region: 'asia-east1' },
+  async (req, res) => {
+    setCors(req, res)
+    if (req.method === 'OPTIONS') {
+      res.status(204).send('')
+      return
+    }
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'method_not_allowed' })
+      return
+    }
+
+    const { idToken } = req.body || {}
+    if (!idToken) {
+      res.status(400).json({ error: 'missing_params' })
+      return
+    }
+
+    try {
+      const verifyRes = await fetch('https://api.line.me/oauth2/v2.1/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          id_token: idToken,
+          client_id: LINE_CHANNEL_ID,
+        }),
+      })
+
+      if (!verifyRes.ok) {
+        const text = await verifyRes.text()
+        console.error('LINE id_token verify failed', verifyRes.status, text)
+        res.status(401).json({ error: 'id_token_invalid', detail: text })
+        return
+      }
+
+      const claims = await verifyRes.json()
+      const firebaseToken = await getAuth().createCustomToken(claims.sub)
+      res.json({
+        userId: claims.sub,
+        displayName: claims.name,
+        pictureUrl: claims.picture,
+        firebaseToken,
+      })
+    } catch (e) {
+      console.error('verifyLiffToken error', e)
       res.status(500).json({ error: 'internal_error' })
     }
   }
