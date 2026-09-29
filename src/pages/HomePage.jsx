@@ -108,6 +108,12 @@ const HomePage = () => {
             </svg>
             以 LINE 帳號登入
           </button>
+          <p style={{ marginTop: 14, fontSize: 12, color: '#b08060', textAlign: 'center', lineHeight: 1.6 }}>
+            登入即代表同意
+            <a href="/terms.html" style={{ color: '#FF6B1A' }}>使用條款</a>
+            與
+            <a href="/privacy.html" style={{ color: '#FF6B1A' }}>隱私權政策</a>
+          </p>
         </div>
       </div>
     )
