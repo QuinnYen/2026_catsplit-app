@@ -139,14 +139,17 @@ const SettlePage = () => {
         <div style={{ background: '#fff', borderRadius: 16, border: '0.5px solid #f0d5c0', padding: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
             <GroupIcon icon={group.icon} color={group.iconColor} size={40} />
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 500, color: '#3d2b1f' }}>{group.name}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+                <div style={{ fontSize: 15, fontWeight: 500, color: '#3d2b1f', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{group.name}</div>
+                <div style={{ fontSize: 11, color: '#b08060', flexShrink: 0 }}>總支出</div>
+              </div>
               <div style={{ fontSize: 12, color: '#b08060' }}>{group.members.length} 位成員 · {expenses.length} 筆消費</div>
             </div>
           </div>
 
           {/* 貨幣選單 + 總支出 */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <select
                 value={displayCurrency}
@@ -162,7 +165,6 @@ const SettlePage = () => {
               )}
             </div>
             <div style={{ flex: 1, minWidth: 0, textAlign: 'right' }}>
-              <div style={{ fontSize: 11, color: '#b08060', marginBottom: 2 }}>總支出</div>
               <div style={{ ...amountStyle(totalText), fontWeight: 500, color: '#FF6B1A' }}>{totalText}</div>
             </div>
           </div>

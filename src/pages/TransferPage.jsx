@@ -99,40 +99,41 @@ const TransferPage = () => {
         {/* 轉帳資訊卡 */}
         <div style={{ background: '#fff', borderRadius: 16, border: '0.5px solid #f0d5c0', padding: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flex: 1 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
               <Avatar src={fromProfile?.avatar} name={fromProfile?.name} size={48} />
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#3d2b1f' }}>{fromProfile?.name}</div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: '#3d2b1f', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fromProfile?.name}</div>
               <div style={{ fontSize: 11, color: '#b08060' }}>付款方</div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-              <div style={{ fontSize: 22, color: '#FF8C42' }}>→</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#fff3ec', borderRadius: 10, border: '1px solid #FF8C42', padding: '6px 10px' }}>
-                <span style={{ fontSize: 13, fontWeight: 500, color: '#FF6B1A', flexShrink: 0 }}>{currencyObj.symbol}</span>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  value={customAmount}
-                  onChange={e => setCustomAmount(e.target.value)}
-                  style={{ width: 80, border: 'none', outline: 'none', background: 'transparent', fontSize: 18, fontWeight: 700, color: '#FF6B1A', textAlign: 'center' }}
-                />
-              </div>
-              {actualAmount !== suggestedAmount && suggestedAmount > 0 && (
-                <button
-                  onClick={() => setCustomAmount(String(suggestedAmount))}
-                  style={{ fontSize: 11, color: '#b08060', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
-                >
-                  建議 {currencyObj.symbol} {suggestedAmount.toLocaleString()}
-                </button>
-              )}
-            </div>
+            <div style={{ fontSize: 22, color: '#FF8C42', flexShrink: 0 }}>→</div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flex: 1 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
               <Avatar src={toProfile?.avatar} name={toProfile?.name} size={48} />
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#3d2b1f' }}>{toProfile?.name}</div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: '#3d2b1f', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{toProfile?.name}</div>
               <div style={{ fontSize: 11, color: '#b08060' }}>收款方</div>
             </div>
           </div>
+
+          <div style={{ position: 'relative', background: '#fff3ec', borderRadius: 10, border: '1px solid #FF8C42', padding: '10px 12px', marginTop: 16 }}>
+            <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 15, fontWeight: 500, color: '#FF6B1A' }}>{currencyObj.symbol}</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={customAmount}
+              onChange={e => setCustomAmount(e.target.value)}
+              style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 22, fontWeight: 700, color: '#FF6B1A', textAlign: 'center' }}
+            />
+          </div>
+          {actualAmount !== suggestedAmount && suggestedAmount > 0 && (
+            <div style={{ textAlign: 'center', marginTop: 8 }}>
+              <button
+                onClick={() => setCustomAmount(String(suggestedAmount))}
+                style={{ fontSize: 11, color: '#b08060', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+              >
+                建議 {currencyObj.symbol} {suggestedAmount.toLocaleString()}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* 付款方式 */}
