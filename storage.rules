@@ -1,0 +1,30 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // 群組成員：uid 為 LINE userId，存在 groups/{groupId}.members
+    function isMember(groupId) {
+      return request.auth != null
+        && request.auth.uid in firestore.get(/databases/(default)/documents/groups/$(groupId)).data.members;
+    }
+
+    function isImage(maxBytes) {
+      return request.resource.size < maxBytes
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // 收據
+    match /receipts/{groupId}/{expenseId}/{file} {
+      allow read: if true;
+      allow create, update: if isMember(groupId) && isImage(5 * 1024 * 1024);
+      allow delete: if isMember(groupId);
+    }
+
+    // 群組封面
+    match /groups/{groupId}/cover/{file} {
+      allow read: if true;
+      allow create, update: if isMember(groupId) && isImage(2 * 1024 * 1024);
+      allow delete: if isMember(groupId);
+    }
+  }
+}
