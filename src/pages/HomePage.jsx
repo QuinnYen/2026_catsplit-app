@@ -5,7 +5,7 @@ import { db } from '../config/firebase'
 import { useApp } from '../context/AppContext'
 import TabBar from '../components/TabBar'
 import Avatar from '../components/Avatar'
-import { getCurrency } from '../config/currencies'
+import { getCurrency } from '../config/currencies' 
 
 const HomePage = () => {
   const { user, loading: authLoading, loginWithLine, logout } = useApp()
