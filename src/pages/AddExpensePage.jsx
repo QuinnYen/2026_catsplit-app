@@ -143,10 +143,15 @@ const AddExpensePage = () => {
       Object.entries(netDelta).forEach(([uid, amt]) => {
         balanceDelta[`memberBalances.${uid}`] = increment(amt)
       })
+      const countDelta = {}
+      Object.keys(baseSplits).forEach(uid => {
+        countDelta[`memberExpenseCounts.${uid}`] = increment(1)
+      })
       batch.update(doc(db, 'groups', id), {
         totalAmount: increment(baseAmount),
         totalExpenses: increment(1),
         ...balanceDelta,
+        ...countDelta,
       })
       await batch.commit()
 

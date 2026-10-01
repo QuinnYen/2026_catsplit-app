@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { computeSplits, applyExchangeRate, computeMemberBalances, primaryPayer, payerLabel, buildPayments, matchExpense } from './expenseHelpers.js'
+import { computeSplits, applyExchangeRate, computeMemberBalances, computeMemberExpenseCounts, primaryPayer, payerLabel, buildPayments, matchExpense } from './expenseHelpers.js'
 
 const sum = (obj) => Object.values(obj).reduce((s, v) => s + v, 0)
 const members = [['a'], ['b'], ['c']]
@@ -125,4 +125,13 @@ test('matchExpense：可用任一付款人名字搜尋', () => {
 test('buildPayments：單人付款為全額，多人付款略過空白與 0', () => {
   assert.deepEqual(buildPayments({ multiPayer: false, paidBy: 'a', payerAmounts: {}, totalAmount: 300 }), { a: 300 })
   assert.deepEqual(buildPayments({ multiPayer: true, paidBy: 'a', payerAmounts: { a: '500', b: '200', c: '', d: '0' }, totalAmount: 700 }), { a: 500, b: 200 })
+})
+
+test('computeMemberExpenseCounts：只計入 splits 內有該成員的支出，支援 Firestore 文件', () => {
+  const docs = [
+    { splits: { a: 50, b: 50 } },
+    { data: () => ({ splits: { a: 100 } }) },
+    { splits: {} },
+  ]
+  assert.deepEqual(computeMemberExpenseCounts(docs), { a: 2, b: 1 })
 })

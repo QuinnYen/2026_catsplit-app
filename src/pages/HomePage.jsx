@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { collection, query, where, orderBy, onSnapshot, getDocs } from 'firebase/firestore'
+import { collection, query, where, orderBy, onSnapshot, getDocs, doc, updateDoc } from 'firebase/firestore'
 import { Users, Wallet, Calculator, Check, Moon, Cat, BedDouble, Sun, PawPrint, Coffee, Utensils, Fish, Cookie, CloudSun, Sunset, Soup } from 'lucide-react'
 import { db } from '../config/firebase'
 import { useApp } from '../context/AppContext'
@@ -9,6 +9,7 @@ import Avatar from '../components/Avatar'
 import GroupIcon from '../components/GroupIcon'
 import PawDecor from '../components/PawDecor'
 import { getCurrency } from '../config/currencies'
+import { computeMemberExpenseCounts } from '../utils/expenseHelpers'
 import { deleteMyData, planDeleteMyData } from '../utils/deleteMyData'
 import catLogo from '../assets/cat-logo.webp'
 
@@ -94,25 +95,23 @@ const HomePage = () => {
   const activeGroups = groups.filter(g => !g.archived)
   const archivedGroups = groups.filter(g => g.archived)
 
-  // 「我參與分攤的支出」筆數：群組文件只存總筆數，需讀各群組的 expenses 才能判斷我有沒有在 splits 裡。
-  // 以筆數與總額組成 key，群組內容變動時才重算。
-  const [myExpenseCount, setMyExpenseCount] = useState(null)
-  const activeKey = activeGroups.map(g => `${g.id}:${g.totalExpenses || 0}:${g.totalAmount || 0}`).join(',')
+  // 「我參與分攤的支出」筆數，直接讀群組文件上維護的 memberExpenseCounts，不需額外讀取。
+  // 尚未有此欄位的舊群組，在這裡一次性補算寫回；補完前顯示「...」。
+  const needBackfill = groups.filter(g => g.memberExpenseCounts === undefined).map(g => g.id).join(',')
+  const myExpenseCount = needBackfill
+    ? null
+    : activeGroups.reduce((sum, g) => sum + (g.memberExpenseCounts?.[user?.uid] || 0), 0)
   useEffect(() => {
-    if (!user || !groupsLoaded) return
-    let cancelled = false
-    const ids = activeKey ? activeKey.split(',').map(k => k.split(':')[0]) : []
-    Promise.all(ids.map(gid => getDocs(collection(db, 'groups', gid, 'expenses'))))
-      .then(snaps => {
-        if (cancelled) return
-        setMyExpenseCount(snaps.reduce((sum, snap) => sum + snap.docs.filter(d => d.data().splits?.[user.uid] != null).length, 0))
-      })
-      .catch(error => {
-        console.error('計算我的消費筆數失敗', error)
-        if (!cancelled) setMyExpenseCount(0)
-      })
-    return () => { cancelled = true }
-  }, [user, groupsLoaded, activeKey])
+    if (!needBackfill) return
+    needBackfill.split(',').forEach(async gid => {
+      try {
+        const snap = await getDocs(collection(db, 'groups', gid, 'expenses'))
+        await updateDoc(doc(db, 'groups', gid), { memberExpenseCounts: computeMemberExpenseCounts(snap.docs) })
+      } catch (error) {
+        console.error('補算消費筆數失敗', error)
+      }
+    })
+  }, [needBackfill])
 
   if (!authLoading && !user) {
     return (

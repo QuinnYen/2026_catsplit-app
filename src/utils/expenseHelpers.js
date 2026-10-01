@@ -114,6 +114,20 @@ export const applyExchangeRate = ({ totalAmount, splits, payments, currency, bas
 }
 
 /**
+ * 從所有支出重算「每人參與分攤的支出筆數」memberExpenseCounts：{ uid: 筆數 }
+ */
+export const computeMemberExpenseCounts = (expenseDocs) => {
+  const counts = {}
+  expenseDocs.forEach(d => {
+    const e = typeof d.data === 'function' ? d.data() : d
+    Object.keys(e.splits || {}).forEach(uid => {
+      counts[uid] = (counts[uid] || 0) + 1
+    })
+  })
+  return counts
+}
+
+/**
  * 從所有支出（+ 結清紀錄）重算 memberBalances
  */
 export const computeMemberBalances = (memberUids, expenseDocs, settlementDocs = []) => {

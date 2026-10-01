@@ -38,6 +38,7 @@ const CreateGroupPage = () => {
         },
         totalAmount: 0,
         totalExpenses: 0,
+        memberExpenseCounts: {},
         baseCurrency,
       createdAt: serverTimestamp(),
       })

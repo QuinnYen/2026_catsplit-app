@@ -10,7 +10,7 @@ import Avatar from '../components/Avatar'
 import GroupIcon from '../components/GroupIcon'
 import PawDecor from '../components/PawDecor'
 import { getCurrency } from '../config/currencies'
-import { computeMemberBalances, matchExpense, payerLabel } from '../utils/expenseHelpers'
+import { computeMemberBalances, computeMemberExpenseCounts, matchExpense, payerLabel } from '../utils/expenseHelpers'
 import { deleteFileByPath } from '../utils/storageCleanup'
 
 const GroupPage = () => {
@@ -90,7 +90,8 @@ const GroupPage = () => {
       ])
       const memberBalances = computeMemberBalances(group.members, expSnap.docs, setSnap.docs)
       const totalAmount = expSnap.docs.reduce((sum, d) => sum + d.data().amount, 0)
-      await updateDoc(doc(db, 'groups', id), { totalAmount, totalExpenses: expSnap.size, memberBalances })
+      const memberExpenseCounts = computeMemberExpenseCounts(expSnap.docs)
+      await updateDoc(doc(db, 'groups', id), { totalAmount, totalExpenses: expSnap.size, memberBalances, memberExpenseCounts })
     } catch (error) {
       console.error('刪除支出失敗', error)
     }

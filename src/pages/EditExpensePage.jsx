@@ -10,7 +10,7 @@ import ExpenseForm from '../components/ExpenseForm'
 import { DEFAULT_CATEGORIES } from '../config/expenseForm'
 import PawDecor from '../components/PawDecor'
 import useExchangeRate from '../hooks/useExchangeRate'
-import { toLocalDateStr, computeSplits, applyExchangeRate, computeMemberBalances, buildPayments, primaryPayer } from '../utils/expenseHelpers'
+import { toLocalDateStr, computeSplits, applyExchangeRate, computeMemberBalances, computeMemberExpenseCounts, buildPayments, primaryPayer } from '../utils/expenseHelpers'
 import { deleteFileByPath } from '../utils/storageCleanup'
 
 const EditExpensePage = () => {
@@ -171,7 +171,8 @@ const EditExpensePage = () => {
     ])
     const memberBalances = computeMemberBalances(group.members, expSnap.docs, setSnap.docs)
     const totalAmount = expSnap.docs.reduce((sum, d) => sum + d.data().amount, 0)
-    await updateDoc(doc(db, 'groups', id), { totalAmount, totalExpenses: expSnap.size, memberBalances })
+    const memberExpenseCounts = computeMemberExpenseCounts(expSnap.docs)
+    await updateDoc(doc(db, 'groups', id), { totalAmount, totalExpenses: expSnap.size, memberBalances, memberExpenseCounts })
   }
 
   const handleReceiptUpdate = async () => {
