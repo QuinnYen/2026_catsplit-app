@@ -60,13 +60,21 @@ export const computeSplits = ({ splitType, totalAmount, effectiveUids, allMember
 
 /**
  * 套用匯率，回傳 baseAmount 與 baseSplits
+ * 各人份額四捨五入後總和可能與總額差幾分錢，尾差歸付款人（付款人不在分攤名單時歸第一位成員）
  */
-export const applyExchangeRate = ({ totalAmount, splits, currency, baseCurrency, exchangeRate }) => {
+export const applyExchangeRate = ({ totalAmount, splits, currency, baseCurrency, exchangeRate, paidBy }) => {
   const rate = currency === baseCurrency ? 1 : (exchangeRate ?? 1)
   const baseAmount = currency === baseCurrency ? totalAmount : parseFloat((totalAmount * rate).toFixed(2))
   const baseSplits = Object.fromEntries(
     Object.entries(splits).map(([uid, v]) => [uid, currency === baseCurrency ? v : parseFloat((v * rate).toFixed(2))])
   )
+  const uids = Object.keys(baseSplits)
+  const remainder = parseFloat((baseAmount - uids.reduce((sum, uid) => sum + baseSplits[uid], 0)).toFixed(2))
+  // 只處理四捨五入造成的尾差；差距過大代表分帳本身不平（如自訂金額），不擅自調整
+  if (remainder !== 0 && Math.abs(remainder) <= 0.05 * uids.length) {
+    const target = uids.includes(paidBy) ? paidBy : uids[0]
+    baseSplits[target] = parseFloat((baseSplits[target] + remainder).toFixed(2))
+  }
   return { rate, baseAmount, baseSplits }
 }
 

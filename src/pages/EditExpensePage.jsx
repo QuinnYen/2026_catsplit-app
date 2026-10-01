@@ -182,7 +182,7 @@ const EditExpensePage = () => {
     try {
       const totalAmount = parseFloat(amount)
       const splits = computeSplits({ splitType, totalAmount, effectiveUids, allMemberEntries: members, shares, percentages, customAmounts })
-      const { rate, baseAmount, baseSplits } = applyExchangeRate({ totalAmount, splits, currency, baseCurrency, exchangeRate })
+      const { rate, baseAmount, baseSplits } = applyExchangeRate({ totalAmount, splits, currency, baseCurrency, exchangeRate, paidBy })
 
       const receiptUpdate = await handleReceiptUpdate()
       await updateDoc(doc(db, 'groups', id, 'expenses', expenseId), {

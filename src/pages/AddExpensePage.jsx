@@ -109,7 +109,7 @@ const AddExpensePage = () => {
     try {
       const totalAmount = parseFloat(amount)
       const splits = computeSplits({ splitType, totalAmount, effectiveUids, allMemberEntries: members, shares, percentages, customAmounts })
-      const { rate, baseAmount, baseSplits } = applyExchangeRate({ totalAmount, splits, currency, baseCurrency, exchangeRate })
+      const { rate, baseAmount, baseSplits } = applyExchangeRate({ totalAmount, splits, currency, baseCurrency, exchangeRate, paidBy })
 
       const docRef = await addDoc(collection(db, 'groups', id, 'expenses'), {
         title: title.trim(),
