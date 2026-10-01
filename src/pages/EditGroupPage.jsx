@@ -137,7 +137,7 @@ const EditGroupPage = () => {
     setRenameSaving(false)
   }
 
-  // 虛擬成員：還沒加入 App 的朋友，先用名字記帳，之後本人點邀請連結時認領
+  // 訪客名字：朋友不用登入，點群組連結選這個名字即可使用；用 LINE 登入認領後就只有本人能用
   const handleAddPlaceholder = async () => {
     const trimmed = placeholderName.trim()
     if (!trimmed || addingPlaceholder) return
@@ -356,7 +356,7 @@ const EditGroupPage = () => {
                         <div style={{ fontSize: 11, color: '#FF8C42' }}>建立者</div>
                       )}
                       {profile?.placeholder && (
-                        <div style={{ fontSize: 11, color: '#b08060' }}>尚未加入，朋友從邀請連結認領</div>
+                        <div style={{ fontSize: 11, color: '#b08060' }}>訪客名字，任何拿到連結的人都能選</div>
                       )}
                     </div>
                     <button
@@ -418,7 +418,7 @@ const EditGroupPage = () => {
               onChange={e => setPlaceholderName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleAddPlaceholder()}
               maxLength={20}
-              placeholder="新增還沒加入的朋友（輸入名字）"
+              placeholder="新增訪客名字（朋友免登入使用）"
               style={{ flex: 1, minWidth: 0, border: '0.5px solid #f0d5c0', borderRadius: 10, padding: '10px 12px', fontSize: 14, color: '#3d2b1f', outline: 'none', background: '#fff8f4' }}
             />
             <button
@@ -441,8 +441,8 @@ const EditGroupPage = () => {
           )}
         </div>
 
-        {/* 退出群組（非建立者） */}
-        {!isCreator && (
+        {/* 退出群組（非建立者；訪客退出等於刪掉這個名字，不開放） */}
+        {!isCreator && !user?.guest && (
           <button
             onClick={handleLeaveGroup}
             disabled={leaving}

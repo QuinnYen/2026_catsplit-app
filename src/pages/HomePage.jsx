@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { collection, query, where, orderBy, onSnapshot, getDocs, doc, updateDoc } from 'firebase/firestore'
+import { collection, query, where, orderBy, onSnapshot, getDoc, getDocs, doc, updateDoc } from 'firebase/firestore'
 import { Users, Wallet, Calculator, Check, Moon, Cat, BedDouble, Sun, PawPrint, Coffee, Utensils, Fish, Cookie, CloudSun, Sunset, Soup } from 'lucide-react'
 import { db } from '../config/firebase'
-import { useApp } from '../context/AppContext'
+import { useApp, MAX_GUEST_NAMES } from '../context/AppContext'
 import TabBar from '../components/TabBar'
 import Avatar from '../components/Avatar'
 import GroupIcon from '../components/GroupIcon'
@@ -36,7 +36,7 @@ const getGreeting = () => {
 }
 
 const HomePage = () => {
-  const { user, loading: authLoading, loginWithLine, logout } = useApp()
+  const { user, loading: authLoading, loginWithLine, logout, guestNames } = useApp()
   const navigate = useNavigate()
   const [{ Icon: GreetingIcon, text: greetingText }] = useState(getGreeting)
   const [groups, setGroups] = useState([])
@@ -45,9 +45,33 @@ const HomePage = () => {
   const [showArchived, setShowArchived] = useState(false)
   const [deletingData, setDeletingData] = useState(false)
 
+  // 訪客：首頁列出這個瀏覽器選過名字的群組（每個群組的「我」是各自的訪客名字 id）
+  const guestKey = user?.guest ? guestNames.map(g => `${g.groupId}:${g.memberId}`).join(',') : ''
+  const myIdIn = (group) => user?.guest
+    ? guestNames.find(g => g.groupId === group.id)?.memberId
+    : user?.uid
+
+  useEffect(() => {
+    if (authLoading || !guestKey) return
+    let cancelled = false
+    const entries = guestKey.split(',').map(e => e.split(':'))
+    Promise.all(entries.map(([gid]) => getDoc(doc(db, 'groups', gid)).catch(() => null)))
+      .then(snaps => {
+        if (cancelled) return
+        // 名字已被認領或移除的群組不顯示
+        const data = snaps
+          .map((snap, i) => snap?.exists() && snap.data().members?.includes(entries[i][1]) ? { id: snap.id, ...snap.data() } : null)
+          .filter(Boolean)
+          .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0))
+        setGroups(data)
+        setGroupsLoaded(true)
+      })
+    return () => { cancelled = true }
+  }, [guestKey, authLoading])
+
   useEffect(() => {
     if (authLoading) return
-    if (!user) return
+    if (!user || user.guest) return
     const q = query(
       collection(db, 'groups'),
       where('members', 'array-contains', user.uid),
@@ -97,10 +121,11 @@ const HomePage = () => {
 
   // 「我參與分攤的支出」筆數，直接讀群組文件上維護的 memberExpenseCounts，不需額外讀取。
   // 尚未有此欄位的舊群組，在這裡一次性補算寫回；補完前顯示「...」。
-  const needBackfill = groups.filter(g => g.memberExpenseCounts === undefined).map(g => g.id).join(',')
+  // 訪客只對目前使用中的群組有寫入權限，不負責補算
+  const needBackfill = user?.guest ? '' : groups.filter(g => g.memberExpenseCounts === undefined).map(g => g.id).join(',')
   const myExpenseCount = needBackfill
     ? null
-    : activeGroups.reduce((sum, g) => sum + (g.memberExpenseCounts?.[user?.uid] || 0), 0)
+    : activeGroups.reduce((sum, g) => sum + (g.memberExpenseCounts?.[myIdIn(g)] || 0), 0)
   useEffect(() => {
     if (!needBackfill) return
     needBackfill.split(',').forEach(async gid => {
@@ -190,7 +215,7 @@ const HomePage = () => {
             </div>
           </div>
           <button
-            onClick={() => { if (confirm(user?.anonymous ? '訪客身分只存在這個瀏覽器，登出後將無法找回你在群組中的紀錄。\n建議先綁定 LINE 帳號。確定要登出嗎？' : '確定要登出嗎？')) logout() }}
+            onClick={() => { if (confirm(user?.guest ? '登出後，下次點群組連結再選一次你的名字即可。確定要登出嗎？' : '確定要登出嗎？')) logout() }}
             style={{ background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.35)', borderRadius: 20, padding: '5px 12px', fontSize: 12, color: '#fff', cursor: 'pointer' }}
           >
             登出
@@ -213,7 +238,7 @@ const HomePage = () => {
       <div style={{ padding: '16px', flex: 1, paddingBottom: 80, display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <div style={{ fontSize: 15, fontWeight: 500, color: '#3d2b1f' }}>我的群組</div>
-          {!user?.anonymous && (
+          {!user?.guest && (
             <button
               onClick={() => navigate('/create')}
               style={{ background: '#FF8C42', color: '#fff', border: 'none', borderRadius: 20, padding: '7px 14px', fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}
@@ -223,9 +248,9 @@ const HomePage = () => {
           )}
         </div>
 
-        {user?.anonymous && (
+        {user?.guest && (
           <div style={{ background: '#fff3ec', border: '0.5px solid #f0d5c0', borderRadius: 14, padding: 12, marginBottom: 12, fontSize: 12, color: '#b08060', lineHeight: 1.6 }}>
-            你目前是訪客身分，紀錄只存在這個瀏覽器，且無法建立群組。綁定 LINE 帳號後，現有群組與帳目都會保留。
+            你目前以訪客名字使用，最多可用 {MAX_GUEST_NAMES} 個群組，也無法建立群組。訪客名字任何拿到連結的人都能選，綁定 LINE 帳號後就只有你能用，帳目都會保留。
             <button
               onClick={() => loginWithLine('/')}
               style={{ display: 'block', marginTop: 8, padding: '8px 14px', borderRadius: 10, border: 'none', background: '#06C755', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
@@ -255,7 +280,7 @@ const HomePage = () => {
         {!loading && (() => {
           const renderCard = (group) => {
             const profiles = Object.values(group.memberProfiles || {}).slice(0, 3)
-            const bal = group.memberBalances?.[user?.uid] ?? null
+            const bal = group.memberBalances?.[myIdIn(group)] ?? null
             const isSettled = bal !== null && Math.abs(bal) < 0.01
             const isPositive = bal !== null && bal > 0.01
             return (
@@ -347,14 +372,19 @@ const HomePage = () => {
           <a href="/terms.html" style={{ color: '#b08060' }}>使用條款</a>
           {' ｜ '}
           <a href="/privacy.html" style={{ color: '#b08060' }}>隱私權政策</a>
-          {' ｜ '}
-          <button
-            onClick={handleDeleteMyData}
-            disabled={deletingData}
-            style={{ background: 'none', border: 'none', padding: 0, fontSize: 12, color: '#b08060', textDecoration: 'underline', cursor: 'pointer' }}
-          >
-            {deletingData ? '刪除中...' : '刪除我的資料'}
-          </button>
+          {/* 訪客名字屬於群組，不能自行刪除；由群組建立者移除 */}
+          {!user?.guest && (
+            <>
+              {' ｜ '}
+              <button
+                onClick={handleDeleteMyData}
+                disabled={deletingData}
+                style={{ background: 'none', border: 'none', padding: 0, fontSize: 12, color: '#b08060', textDecoration: 'underline', cursor: 'pointer' }}
+              >
+                {deletingData ? '刪除中...' : '刪除我的資料'}
+              </button>
+            </>
+          )}
         </div>
       </div>
 

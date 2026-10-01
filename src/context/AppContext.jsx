@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { signInWithCustomToken, signInAnonymously, signOut, onAuthStateChanged } from 'firebase/auth'
+import { signInWithCustomToken, signOut, onAuthStateChanged } from 'firebase/auth'
 import { auth } from '../config/firebase'
 import { initLiff } from '../config/liff'
 
@@ -7,6 +7,18 @@ const AppContext = createContext(null)
 
 const LINE_CHANNEL_ID = '2010062826'
 const STORAGE_KEY = 'catsplit_user'
+// 訪客選過的名字 [{ groupId, memberId, name }]，最新的在前；進入群組時自動切換成該群組的名字
+const GUEST_NAMES_KEY = 'catsplit_guest_names'
+export const MAX_GUEST_NAMES = 3
+const readGuestNames = () => {
+  try {
+    const list = JSON.parse(localStorage.getItem(GUEST_NAMES_KEY))
+    return Array.isArray(list) ? list : []
+  } catch {
+    return []
+  }
+}
+const writeGuestNames = (list) => localStorage.setItem(GUEST_NAMES_KEY, JSON.stringify(list))
 const OAUTH_STATE_KEY = 'catsplit_oauth_state'
 // localStorage 跨 redirect 保留，sessionStorage 在 LINE OAuth 跳轉後可能遺失
 const stateStore = {
@@ -16,31 +28,43 @@ const stateStore = {
 }
 const TOKEN_EXCHANGE_URL = import.meta.env.VITE_TOKEN_EXCHANGE_URL
 const VERIFY_LIFF_TOKEN_URL = TOKEN_EXCHANGE_URL?.replace('/lineLogin', '/verifyLiffToken')
-const LINK_ANONYMOUS_URL = TOKEN_EXCHANGE_URL?.replace('/lineLogin', '/linkAnonymous')
 const CLAIM_MEMBER_URL = TOKEN_EXCHANGE_URL?.replace('/lineLogin', '/claimMember')
+const GUEST_LOGIN_URL = TOKEN_EXCHANGE_URL?.replace('/lineLogin', '/guestLogin')
 
 const postJson = (url, idToken, body) => fetch(url, {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+  headers: { 'Content-Type': 'application/json', ...(idToken && { Authorization: `Bearer ${idToken}` }) },
   body: JSON.stringify(body),
 })
 
-// 以 LINE 身分登入 Firebase；若登入前是匿名帳號，把匿名帳號的群組紀錄搬到 LINE 帳號
-const signInWithLineToken = async (firebaseToken) => {
-  await auth.authStateReady()
-  const anonIdToken = auth.currentUser?.isAnonymous ? await auth.currentUser.getIdToken() : null
+const requestClaim = async (idToken, groupId, placeholderId, avatar) => {
+  const res = await postJson(CLAIM_MEMBER_URL, idToken, { groupId, placeholderId, avatar: avatar ?? null })
+  if (!res.ok) throw new Error(`claim_failed: ${await res.text()}`)
+}
+
+// 以 LINE 身分登入 Firebase；若這個瀏覽器選過訪客名字，順便全部認領（綁定 LINE）。
+// 認領失敗不會遺失資料：訪客名字仍在群組裡，之後可再從群組頁認領
+const signInWithLineToken = async (firebaseToken, avatar) => {
+  const guestNames = readGuestNames()
   const cred = await signInWithCustomToken(auth, firebaseToken)
-  if (!anonIdToken) return
+  localStorage.removeItem(GUEST_NAMES_KEY)
+  if (guestNames.length === 0) return
   const lineIdToken = await cred.user.getIdToken()
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (const g of guestNames) {
     try {
-      const res = await postJson(LINK_ANONYMOUS_URL, lineIdToken, { anonIdToken })
-      if (res.ok) return
-      console.error('linkAnonymous 失敗', await res.text())
+      await requestClaim(lineIdToken, g.groupId, g.memberId, avatar)
     } catch (e) {
-      console.error('linkAnonymous 失敗', e)
+      console.error('綁定訪客名字失敗', g, e)
     }
   }
+}
+
+// 取得群組的訪客名字清單（不需登入，持有群組連結即可）
+// eslint-disable-next-line react-refresh/only-export-components
+export const fetchGuestList = async (groupId) => {
+  const res = await postJson(GUEST_LOGIN_URL, null, { groupId })
+  if (!res.ok) throw new Error(`guest_list_failed: ${res.status}`)
+  return res.json()
 }
 
 const buildRedirectUri = () => `${window.location.origin}/auth/callback`
@@ -105,7 +129,7 @@ export const AppProvider = ({ children }) => {
               })
               if (res.ok) {
                 const data = await res.json()
-                await signInWithLineToken(data.firebaseToken)
+                await signInWithLineToken(data.firebaseToken, profile.pictureUrl)
               } else {
                 console.error('verifyLiffToken 失敗', await res.text())
               }
@@ -171,27 +195,49 @@ export const AppProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(GUEST_NAMES_KEY)
     if (liffInstance?.isLoggedIn()) liffInstance.logout()
     signOut(auth).catch(() => {})
     setUser(null)
   }
 
-  // 不登入 LINE，以暱稱匿名加入（只能加入群組，不能建立）
-  const loginAsGuest = async (name) => {
-    const cred = await signInAnonymously(auth)
-    const u = { uid: cred.user.uid, name: name.trim(), avatar: null, anonymous: true }
+  // 不登入 LINE，選一個訪客名字使用（uid 即該名字的成員 id，同一時間只代表一個群組）。
+  // 最多記住 MAX_GUEST_NAMES 個群組的名字，超過要用 LINE 登入（丟出 guest_limit）
+  const loginAsGuest = async (groupId, memberId) => {
+    const others = readGuestNames().filter(g => g.groupId !== groupId)
+    if (others.length >= MAX_GUEST_NAMES) throw new Error('guest_limit')
+    const res = await postJson(GUEST_LOGIN_URL, null, { groupId, memberId })
+    if (!res.ok) {
+      // 名字已被認領或移除，從記錄中拿掉
+      if (res.status === 404) writeGuestNames(others)
+      throw new Error(`guest_login_failed: ${res.status}`)
+    }
+    const data = await res.json()
+    await signInWithCustomToken(auth, data.firebaseToken)
+    writeGuestNames([{ groupId, memberId, name: data.name }, ...others])
+    const u = { uid: memberId, name: data.name, avatar: null, guest: true, groupId }
     setUser(u)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(u))
     return u
   }
 
-  // 認領群組內的虛擬成員，成功後自己就成為該群組成員
-  const claimMember = async (groupId, placeholderId) => {
-    const res = await postJson(CLAIM_MEMBER_URL, await auth.currentUser.getIdToken(), {
-      groupId, placeholderId, avatar: user.avatar ?? null,
-    })
-    if (!res.ok) throw new Error(`claim_failed: ${await res.text()}`)
+  // 訪客進入另一個選過名字的群組時，自動切換成該群組的名字。
+  // 失敗時（名字已被認領、移除或網路錯誤）忘掉這筆，讓群組頁顯示名單重新選
+  const switchGuestGroup = async (groupId) => {
+    const entry = readGuestNames().find(g => g.groupId === groupId)
+    if (!entry) return
+    try {
+      await loginAsGuest(entry.groupId, entry.memberId)
+    } catch (e) {
+      console.error('切換訪客名字失敗', e)
+      writeGuestNames(readGuestNames().filter(g => g.groupId !== groupId))
+      setUser(prev => ({ ...prev }))
+    }
   }
+
+  // LINE 使用者認領訪客名字，成功後自己就成為該群組成員，這個名字之後只有本人能用
+  const claimMember = async (groupId, placeholderId) =>
+    requestClaim(await auth.currentUser.getIdToken(), groupId, placeholderId, user.avatar)
 
   const completeOAuthCallback = async ({ code, state }) => {
     const savedState = stateStore.get()
@@ -215,7 +261,7 @@ export const AppProvider = ({ children }) => {
     }
 
     const data = await res.json()
-    await signInWithLineToken(data.firebaseToken)
+    await signInWithLineToken(data.firebaseToken, data.pictureUrl)
     const u = {
       uid: data.userId,
       name: data.displayName,
@@ -227,7 +273,7 @@ export const AppProvider = ({ children }) => {
   }
 
   return (
-    <AppContext.Provider value={{ user, setUser, loading, loginWithLine, loginAsGuest, claimMember, logout, completeOAuthCallback, liffInstance }}>
+    <AppContext.Provider value={{ user, setUser, loading, loginWithLine, loginAsGuest, switchGuestGroup, guestNames: user?.guest ? readGuestNames() : [], claimMember, logout, completeOAuthCallback, liffInstance }}>
       {children}
     </AppContext.Provider>
   )

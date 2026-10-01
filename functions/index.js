@@ -147,7 +147,7 @@ export const verifyLiffToken = onRequest(
   }
 )
 
-// ---------- 身分合併：認領虛擬成員 / 匿名帳號綁定 LINE ----------
+// ---------- 訪客：選名字登入 / LINE 認領訪客名字 ----------
 
 const verifyBearer = async (req) => {
   const m = /^Bearer (.+)$/.exec(req.headers.authorization || '')
@@ -229,8 +229,65 @@ const migrateMember = async (groupId, fromId, toUid, profileOverride = {}) => {
   return true
 }
 
+// 虛擬成員（訪客名字）的 id 一律以 p_ 開頭；LINE userId 不含底線，不會撞號
+const isGuestId = (id) => typeof id === 'string' && /^p_[A-Za-z0-9]{1,40}$/.test(id)
+
+const readGroup = async (groupId) => {
+  if (typeof groupId !== 'string' || !/^[A-Za-z0-9]{1,40}$/.test(groupId)) return null
+  const snap = await getFirestore().doc(`groups/${groupId}`).get()
+  return snap.exists ? snap.data() : null
+}
+
+const guestList = (group) => group.members
+  .filter((m) => isGuestId(m) && group.memberProfiles?.[m]?.placeholder)
+  .map((m) => ({ id: m, name: group.memberProfiles[m].name }))
+
 /**
- * 認領群組內的虛擬成員（id 以 p_ 開頭）。呼叫者需已登入（匿名或 LINE 皆可）且尚未是該群組成員。
+ * 訪客登入：不需要登入即可呼叫，持有群組連結即可。
+ * - body { groupId }：回傳群組名稱與可選的訪客名字
+ * - body { groupId, memberId }：以該訪客名字登入，回傳 Firebase custom token（uid 即 memberId）
+ * 訪客名字不鎖定，誰都能選；想鎖定請綁定 LINE（見 claimMember）。
+ */
+export const guestLogin = onRequest(
+  { cors: false, region: 'asia-east1', maxInstances: 5 },
+  async (req, res) => {
+    setCors(req, res)
+    if (req.method === 'OPTIONS') {
+      res.status(204).send('')
+      return
+    }
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'method_not_allowed' })
+      return
+    }
+
+    const { groupId, memberId } = req.body || {}
+    try {
+      const group = await readGroup(groupId)
+      if (!group) {
+        res.status(404).json({ error: 'group_not_found' })
+        return
+      }
+      if (memberId === undefined) {
+        res.json({ groupName: group.name, guests: guestList(group) })
+        return
+      }
+      if (!guestList(group).some((g) => g.id === memberId)) {
+        res.status(404).json({ error: 'guest_not_found' })
+        return
+      }
+      const firebaseToken = await getAuth().createCustomToken(memberId, { guest: true, groupId })
+      res.json({ firebaseToken, name: group.memberProfiles[memberId].name })
+    } catch (e) {
+      console.error('guestLogin error', e)
+      res.status(500).json({ error: 'internal_error' })
+    }
+  }
+)
+
+/**
+ * LINE 使用者認領訪客名字：把該名字的所有帳目搬到自己的 LINE 帳號，之後這個名字就只有本人能用。
+ * 訪客綁定 LINE 也是走這支（登入 LINE 後認領自己原本的訪客名字）。
  */
 export const claimMember = onRequest(
   { cors: false, region: 'asia-east1', maxInstances: 5 },
@@ -246,21 +303,15 @@ export const claimMember = onRequest(
     }
 
     const caller = await verifyBearer(req)
-    if (!caller) {
+    if (!caller || caller.guest) {
       res.status(401).json({ error: 'unauthenticated' })
       return
     }
 
     const { groupId, placeholderId, avatar } = req.body || {}
-    if (typeof groupId !== 'string' || typeof placeholderId !== 'string' || !placeholderId.startsWith('p_')) {
-      res.status(400).json({ error: 'missing_params' })
-      return
-    }
-
     try {
-      const snap = await getFirestore().doc(`groups/${groupId}`).get()
-      const group = snap.data()
-      if (!group || !group.members?.includes(placeholderId) || !group.memberProfiles?.[placeholderId]?.placeholder) {
+      const group = await readGroup(groupId)
+      if (!group || !guestList(group).some((g) => g.id === placeholderId)) {
         res.status(404).json({ error: 'placeholder_not_found' })
         return
       }
@@ -270,57 +321,11 @@ export const claimMember = onRequest(
       }
       const safeAvatar = typeof avatar === 'string' && avatar.startsWith('https://') && avatar.length <= 500 ? avatar : null
       await migrateMember(groupId, placeholderId, caller.uid, { avatar: safeAvatar })
+      // 訪客 uid 已不在任何群組，刪掉它的 Auth 紀錄（同時讓還登入著這個名字的裝置失效）
+      await getAuth().deleteUser(placeholderId).catch(() => {})
       res.json({ ok: true })
     } catch (e) {
       console.error('claimMember error', e)
-      res.status(500).json({ error: 'internal_error' })
-    }
-  }
-)
-
-/**
- * 匿名帳號綁定 LINE：Authorization 帶 LINE 登入後的 ID token，body 帶登入前匿名帳號的 ID token。
- * 兩個 token 都驗證過，才把匿名 uid 的所有群組紀錄搬到 LINE uid。
- */
-export const linkAnonymous = onRequest(
-  { cors: false, region: 'asia-east1', maxInstances: 5, timeoutSeconds: 120 },
-  async (req, res) => {
-    setCors(req, res)
-    if (req.method === 'OPTIONS') {
-      res.status(204).send('')
-      return
-    }
-    if (req.method !== 'POST') {
-      res.status(405).json({ error: 'method_not_allowed' })
-      return
-    }
-
-    const lineUser = await verifyBearer(req)
-    if (!lineUser || lineUser.firebase?.sign_in_provider !== 'custom') {
-      res.status(401).json({ error: 'unauthenticated' })
-      return
-    }
-
-    const { anonIdToken } = req.body || {}
-    let anonUser
-    try {
-      anonUser = await getAuth().verifyIdToken(anonIdToken)
-    } catch {
-      res.status(401).json({ error: 'anon_token_invalid' })
-      return
-    }
-    if (anonUser.firebase?.sign_in_provider !== 'anonymous') {
-      res.status(400).json({ error: 'not_anonymous' })
-      return
-    }
-
-    try {
-      const groups = await getFirestore().collection('groups').where('members', 'array-contains', anonUser.uid).get()
-      for (const g of groups.docs) await migrateMember(g.id, anonUser.uid, lineUser.uid)
-      await getAuth().deleteUser(anonUser.uid).catch(() => {})
-      res.json({ ok: true, migrated: groups.size })
-    } catch (e) {
-      console.error('linkAnonymous error', e)
       res.status(500).json({ error: 'internal_error' })
     }
   }

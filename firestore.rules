@@ -7,13 +7,13 @@ service cloud.firestore {
         && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members;
     }
 
-    // 匿名登入者只能加入群組，不能建立
+    // 訪客（guestLogin 發的 token 帶 guest claim）只能使用自己那個名字，不能建立、加入或退出群組
     function isLineUser() {
-      return request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous';
+      return request.auth != null && request.auth.token.get('guest', false) != true;
     }
 
     // 成員新增一位虛擬成員：members 只多一人（arrayUnion 會加在最後），id 以 p_ 開頭
-    // （LINE userId 與匿名 uid 都不含底線，不會撞號），且 memberProfiles 只多這一筆並標記 placeholder
+    // （LINE userId 不含底線，不會撞號），且 memberProfiles 只多這一筆並標記 placeholder
     function addsPlaceholder() {
       let before = resource.data;
       let after = request.resource.data;
@@ -50,8 +50,9 @@ service cloud.firestore {
 
       // 更新：
       //  - 成員可更新，但不能改 createdBy，也不能新增成員（新增只能由本人加入）
-      //  - 成員名單只能減少一人：本人退出，或建立者移除他人
-      //  - 非成員只能把自己加入 members（上限 50 人），並且只新增自己的 memberProfiles
+      //  - 成員名單只能減少一人：本人退出，或建立者移除他人（訪客不能退出，否則等於刪掉這個名字）
+      //  - 非成員只能把自己加入 members（上限 50 人），並且只新增自己的 memberProfiles；訪客不能加入其他群組
+      //  - 成員可新增虛擬成員（訪客名字）
       allow update: if request.auth != null && (
         (
           request.auth.uid in resource.data.members
@@ -59,7 +60,8 @@ service cloud.firestore {
           && (
             !request.resource.data.diff(resource.data).affectedKeys().hasAny(['members'])
             || (
-              request.resource.data.members.toSet().difference(resource.data.members.toSet()).size() == 0
+              isLineUser()
+              && request.resource.data.members.toSet().difference(resource.data.members.toSet()).size() == 0
               && request.resource.data.members.size() == resource.data.members.size() - 1
               && (
                 resource.data.members.toSet().difference(request.resource.data.members.toSet()) == [request.auth.uid].toSet()
@@ -70,7 +72,8 @@ service cloud.firestore {
         )
         ||
         (
-          !(request.auth.uid in resource.data.members)
+          isLineUser()
+          && !(request.auth.uid in resource.data.members)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'memberProfiles'])
           && request.resource.data.members.hasAll(resource.data.members)
           && request.resource.data.members.size() == resource.data.members.size() + 1
