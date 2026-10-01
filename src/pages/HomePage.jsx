@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
+import { collection, query, where, orderBy, onSnapshot, getDocs } from 'firebase/firestore'
 import { Users, Wallet, Calculator, Check, Moon, Cat, BedDouble, Sun, PawPrint, Coffee, Utensils, Fish, Cookie, CloudSun, Sunset, Soup } from 'lucide-react'
 import { db } from '../config/firebase'
 import { useApp } from '../context/AppContext'
@@ -93,7 +93,26 @@ const HomePage = () => {
 
   const activeGroups = groups.filter(g => !g.archived)
   const archivedGroups = groups.filter(g => g.archived)
-  const totalExpenses = activeGroups.reduce((sum, g) => sum + (g.totalExpenses || 0), 0)
+
+  // 「我參與分攤的支出」筆數：群組文件只存總筆數，需讀各群組的 expenses 才能判斷我有沒有在 splits 裡。
+  // 以筆數與總額組成 key，群組內容變動時才重算。
+  const [myExpenseCount, setMyExpenseCount] = useState(null)
+  const activeKey = activeGroups.map(g => `${g.id}:${g.totalExpenses || 0}:${g.totalAmount || 0}`).join(',')
+  useEffect(() => {
+    if (!user || !groupsLoaded) return
+    let cancelled = false
+    const ids = activeKey ? activeKey.split(',').map(k => k.split(':')[0]) : []
+    Promise.all(ids.map(gid => getDocs(collection(db, 'groups', gid, 'expenses'))))
+      .then(snaps => {
+        if (cancelled) return
+        setMyExpenseCount(snaps.reduce((sum, snap) => sum + snap.docs.filter(d => d.data().splits?.[user.uid] != null).length, 0))
+      })
+      .catch(error => {
+        console.error('計算我的消費筆數失敗', error)
+        if (!cancelled) setMyExpenseCount(0)
+      })
+    return () => { cancelled = true }
+  }, [user, groupsLoaded, activeKey])
 
   if (!authLoading && !user) {
     return (
@@ -183,10 +202,10 @@ const HomePage = () => {
         <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 16, padding: 14, border: '1px solid rgba(255,255,255,0.3)' }}>
           <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, marginBottom: 4 }}>消費總覽</div>
           <div style={{ color: '#fff', fontSize: 22, fontWeight: 500 }}>
-            {totalExpenses} 筆消費
+            {myExpenseCount ?? '...'} 筆消費
           </div>
           <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 4 }}>
-            {groups.length} 個群組
+            {activeGroups.length} 個群組
           </div>
         </div>
       </div>
