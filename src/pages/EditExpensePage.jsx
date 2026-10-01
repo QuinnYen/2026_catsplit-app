@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { doc, collection, getDoc, getDocs, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { ref, uploadBytes } from 'firebase/storage'
 import { CheckCircle2, Trash2 } from 'lucide-react'
 import { db, storage } from '../config/firebase'
 import imageCompression from 'browser-image-compression'
@@ -11,7 +11,7 @@ import { DEFAULT_CATEGORIES } from '../config/expenseForm'
 import PawDecor from '../components/PawDecor'
 import useExchangeRate from '../hooks/useExchangeRate'
 import { toLocalDateStr, computeSplits, applyExchangeRate, computeMemberBalances } from '../utils/expenseHelpers'
-import { deleteFileByUrl } from '../utils/storageCleanup'
+import { deleteFileByPath } from '../utils/storageCleanup'
 
 const EditExpensePage = () => {
   const { id, expenseId } = useParams()
@@ -36,7 +36,7 @@ const EditExpensePage = () => {
   const [expenseDate, setExpenseDate] = useState('')
   const [receiptFile, setReceiptFile] = useState(null)
   const [receiptPreview, setReceiptPreview] = useState(null)
-  const [existingReceiptUrl, setExistingReceiptUrl] = useState(null)
+  const [existingReceiptPath, setExistingReceiptPath] = useState(null)
   const [removeExistingReceipt, setRemoveExistingReceipt] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -59,7 +59,7 @@ const EditExpensePage = () => {
 
       const base = groupData.baseCurrency || 'TWD'
       setBaseCurrency(base)
-      if (expense.receiptUrl) setExistingReceiptUrl(expense.receiptUrl)
+      if (expense.receiptPath) setExistingReceiptPath(expense.receiptPath)
       setTitle(expense.title)
       setAmount(String(expense.originalAmount ?? expense.amount))
       setCurrency(expense.currency || base)
@@ -166,13 +166,12 @@ const EditExpensePage = () => {
       const ext = receiptFile.type === 'image/png' ? 'png' : 'jpg'
       const storageRef = ref(storage, `receipts/${id}/${expenseId}/${Date.now()}.${ext}`)
       const snapshot = await uploadBytes(storageRef, compressed, { contentType: compressed.type || 'image/jpeg' })
-      const receiptUrl = await getDownloadURL(snapshot.ref)
-      await deleteFileByUrl(existingReceiptUrl)
-      return { receiptUrl }
+      await deleteFileByPath(existingReceiptPath)
+      return { receiptPath: snapshot.ref.fullPath }
     }
-    if (removeExistingReceipt && existingReceiptUrl) {
-      await deleteFileByUrl(existingReceiptUrl)
-      return { receiptUrl: null }
+    if (removeExistingReceipt && existingReceiptPath) {
+      await deleteFileByPath(existingReceiptPath)
+      return { receiptPath: null }
     }
     return {}
   }
@@ -215,7 +214,7 @@ const EditExpensePage = () => {
     setLoading(true)
     try {
       await deleteDoc(doc(db, 'groups', id, 'expenses', expenseId))
-      await deleteFileByUrl(existingReceiptUrl)
+      await deleteFileByPath(existingReceiptPath)
       await recomputeAndSaveBalances()
       navigate(`/group/${id}`)
     } catch (error) {
@@ -271,7 +270,7 @@ const EditExpensePage = () => {
           effectiveUids={effectiveUids}
           receiptFile={receiptFile} setReceiptFile={setReceiptFile}
           receiptPreview={receiptPreview} setReceiptPreview={setReceiptPreview}
-          existingReceiptUrl={existingReceiptUrl}
+          existingReceiptPath={existingReceiptPath}
           removeExistingReceipt={removeExistingReceipt} setRemoveExistingReceipt={setRemoveExistingReceipt}
         />
 

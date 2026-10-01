@@ -8,6 +8,7 @@ import Avatar from '../components/Avatar'
 import PawDecor from '../components/PawDecor'
 import { getCurrency } from '../config/currencies'
 import { toLocalDateStr } from '../utils/expenseHelpers'
+import { useStorageImage } from '../hooks/useStorageImage'
 
 const SPLIT_LABEL = {
   equal: '平均分攤',
@@ -23,6 +24,7 @@ const ExpenseDetailPage = () => {
   const navigate = useNavigate()
   const [group, setGroup] = useState(null)
   const [expense, setExpense] = useState(null)
+  const receiptUrl = useStorageImage(expense?.receiptPath)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -175,16 +177,18 @@ const ExpenseDetailPage = () => {
         </div>
 
         {/* 收據圖片 */}
-        {expense.receiptUrl && (
+        {expense.receiptPath && (
           <div style={{ background: '#fff', borderRadius: 16, border: '0.5px solid #f0d5c0', padding: 14 }}>
             <div style={{ fontSize: 12, fontWeight: 500, color: '#b08060', marginBottom: 10 }}>收據照片</div>
-            <a href={expense.receiptUrl} target="_blank" rel="noopener noreferrer">
-              <img
-                src={expense.receiptUrl}
-                alt="收據"
-                style={{ width: '100%', maxHeight: 260, objectFit: 'contain', borderRadius: 10, background: '#f5f0eb', display: 'block' }}
-              />
-            </a>
+            {receiptUrl && (
+              <a href={receiptUrl} target="_blank" rel="noopener noreferrer">
+                <img
+                  src={receiptUrl}
+                  alt="收據"
+                  style={{ width: '100%', maxHeight: 260, objectFit: 'contain', borderRadius: 10, background: '#f5f0eb', display: 'block' }}
+                />
+              </a>
+            )}
           </div>
         )}
 

@@ -1,0 +1,11 @@
+[
+  {
+    "origin": [
+      "https://catsplit-app.web.app",
+      "https://catsplit-app.firebaseapp.com",
+      "http://localhost:5173"
+    ],
+    "method": ["GET"],
+    "maxAgeSeconds": 3600
+  }
+]

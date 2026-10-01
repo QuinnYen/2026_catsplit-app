@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { collection, addDoc, Timestamp, serverTimestamp, doc, getDoc, updateDoc, increment } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { ref, uploadBytes } from 'firebase/storage'
 import { CheckCircle2 } from 'lucide-react'
 import { db, storage } from '../config/firebase'
 import { useApp } from '../context/AppContext'
@@ -100,7 +100,7 @@ const AddExpensePage = () => {
     const ext = receiptFile.type === 'image/png' ? 'png' : 'jpg'
     const storageRef = ref(storage, `receipts/${id}/${expenseId}/${Date.now()}.${ext}`)
     const snapshot = await uploadBytes(storageRef, compressed, { contentType: compressed.type || 'image/jpeg' })
-    return getDownloadURL(snapshot.ref)
+    return snapshot.ref.fullPath
   }
 
   const handleSubmit = async () => {
@@ -129,8 +129,8 @@ const AddExpensePage = () => {
       })
 
       try {
-        const receiptUrl = await uploadReceipt(docRef.id)
-        if (receiptUrl) await updateDoc(docRef, { receiptUrl })
+        const receiptPath = await uploadReceipt(docRef.id)
+        if (receiptPath) await updateDoc(docRef, { receiptPath })
       } catch (uploadErr) {
         console.error('收據上傳失敗', uploadErr)
         alert('支出已儲存，但收據上傳失敗：' + (uploadErr?.code || uploadErr?.message || '未知錯誤'))

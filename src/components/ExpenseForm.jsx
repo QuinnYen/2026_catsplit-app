@@ -3,6 +3,7 @@ import { Check, Camera, ChevronDown } from 'lucide-react'
 import Avatar from './Avatar'
 import { CURRENCIES, getCurrency } from '../config/currencies'
 import { todayStr } from '../utils/expenseHelpers'
+import { useStorageImage } from '../hooks/useStorageImage'
 import { DEFAULT_CATEGORIES, SPLIT_TYPES } from '../config/expenseForm'
 
 const inputStyle = {
@@ -101,13 +102,14 @@ const ExpenseForm = ({
   // 收據圖片
   setReceiptFile,
   receiptPreview, setReceiptPreview,
-  existingReceiptUrl,
+  existingReceiptPath,
   removeExistingReceipt, setRemoveExistingReceipt,
   // LINE 分享（僅 AddExpensePage 傳入）
   shareToLine, setShareToLine,
   showShareOption,
 }) => {
   const amountNum = parseFloat(amount) || 0
+  const existingReceiptUrl = useStorageImage(existingReceiptPath)
 
   return (
     <>
@@ -418,7 +420,7 @@ const ExpenseForm = ({
           <div style={labelStyle}>收據照片（選填）</div>
 
           {/* 已有圖片（既有 URL 或本次選擇的預覽） */}
-          {(receiptPreview || (existingReceiptUrl && !removeExistingReceipt)) ? (
+          {(receiptPreview || (existingReceiptPath && !removeExistingReceipt)) ? (
             <div style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
               <img
                 src={receiptPreview || existingReceiptUrl}
