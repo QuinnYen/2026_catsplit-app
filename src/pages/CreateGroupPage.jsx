@@ -33,7 +33,7 @@ const CreateGroupPage = () => {
         memberProfiles: {
           [user.uid]: {
             name: user.name,
-            avatar: user.avatar,
+            avatar: user.avatar ?? null,
           }
         },
         totalAmount: 0,

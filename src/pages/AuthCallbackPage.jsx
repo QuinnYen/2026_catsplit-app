@@ -26,7 +26,8 @@ const AuthCallbackPage = () => {
       .then(() => {
         const redirect = localStorage.getItem('catsplit_redirect')
         localStorage.removeItem('catsplit_redirect')
-        navigate(redirect || '/', { replace: true })
+        // 只接受站內路徑，避免被塞入奇怪的值
+        navigate(redirect?.startsWith('/') && !redirect.startsWith('//') ? redirect : '/', { replace: true })
       })
       .catch((e) => {
         console.error(e)

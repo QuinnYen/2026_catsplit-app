@@ -27,16 +27,26 @@ const GroupPage = () => {
   const [openMenuId, setOpenMenuId] = useState(null)
   const [detailSettlementId, setDetailSettlementId] = useState(null)
   const [joining, setJoining] = useState(false)
+  const [joinError, setJoinError] = useState('')
+  const [groupMissing, setGroupMissing] = useState(false)
   const [loadedCover, setLoadedCover] = useState(null)
 
   useEffect(() => {
     const unsubscribe = onSnapshot(doc(db, 'groups', id), (snap) => {
+      setGroupMissing(!snap.exists())
       if (snap.exists()) setGroup({ id: snap.id, ...snap.data() })
+    }, (error) => {
+      console.error('讀取群組失敗:', error)
+      setGroupMissing(true)
     })
     return () => unsubscribe()
   }, [id])
 
+  // 子集合只有成員讀得到；非成員時先不訂閱，否則被拒絕的監聽器不會在加入後自動恢復
+  const isMember = !!group?.members?.includes(user?.uid)
+
   useEffect(() => {
+    if (!isMember) return
     const q = query(
       collection(db, 'groups', id, 'expenses'),
       orderBy('createdAt', 'desc')
@@ -50,9 +60,10 @@ const GroupPage = () => {
       setLoading(false)
     })
     return () => unsubscribe()
-  }, [id])
+  }, [id, isMember])
 
   useEffect(() => {
+    if (!isMember) return
     const q = query(
       collection(db, 'groups', id, 'settlements'),
       orderBy('createdAt', 'desc')
@@ -60,9 +71,11 @@ const GroupPage = () => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
       setSettlements(data)
+    }, (error) => {
+      console.error('讀取轉帳紀錄失敗:', error)
     })
     return () => unsubscribe()
-  }, [id])
+  }, [id, isMember])
 
   const handleDeleteExpense = async (expenseId) => {
     if (!window.confirm('確定要刪除這筆支出嗎？')) return
@@ -154,15 +167,33 @@ const GroupPage = () => {
 
   const handleJoin = async () => {
     setJoining(true)
+    setJoinError('')
     try {
       await updateDoc(doc(db, 'groups', id), {
         members: arrayUnion(user.uid),
-        [`memberProfiles.${user.uid}`]: { name: user.name, avatar: user.avatar },
+        [`memberProfiles.${user.uid}`]: { name: user.name, avatar: user.avatar ?? null },
       })
     } catch (error) {
       console.error('加入失敗', error)
+      setJoinError(error?.code === 'permission-denied'
+        ? '無法加入：群組可能已滿 50 人，或邀請連結已失效'
+        : '加入失敗，請稍後再試')
       setJoining(false)
     }
+  }
+
+  if (groupMissing) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#fff8f4', color: '#b08060', gap: 16, padding: 24, textAlign: 'center' }}>
+        <div>找不到這個群組，可能已被刪除，或連結有誤</div>
+        <button
+          onClick={() => navigate('/')}
+          style={{ padding: '10px 24px', borderRadius: 12, border: '0.5px solid #f0d5c0', background: '#fff', color: '#3d2b1f', fontSize: 14, cursor: 'pointer' }}
+        >
+          回首頁
+        </button>
+      </div>
+    )
   }
 
   if (!group) {
@@ -174,7 +205,7 @@ const GroupPage = () => {
   }
 
   // 未加入成員 → 顯示加入畫面
-  if (!group.members?.includes(user?.uid)) {
+  if (!isMember) {
     const profiles = Object.values(group.memberProfiles || {})
     return (
       <div style={{ minHeight: '100vh', background: '#fff8f4', display: 'flex', flexDirection: 'column' }}>
@@ -220,6 +251,9 @@ const GroupPage = () => {
             </div>
           </div>
           <div style={{ flex: 1 }} />
+          {joinError && (
+            <div style={{ fontSize: 13, color: '#c0392b', textAlign: 'center' }}>{joinError}</div>
+          )}
           <button
             onClick={handleJoin}
             disabled={joining}

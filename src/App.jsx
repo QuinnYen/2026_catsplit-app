@@ -67,8 +67,10 @@ const LoginScreen = ({ onLogin }) => (
 
 const ProtectedRoutes = () => {
   const { user, loading, loginWithLine } = useApp()
+  const location = useLocation()
   if (loading) return <LoadingScreen />
-  if (!user) return <LoginScreen onLogin={loginWithLine} />
+  // 登入後要回到原本開啟的頁面（例如邀請連結的群組頁）
+  if (!user) return <LoginScreen onLogin={() => loginWithLine(location.pathname + location.search)} />
 
   return (
     <Routes>
