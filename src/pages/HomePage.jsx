@@ -192,7 +192,7 @@ const HomePage = () => {
       </div>
 
       {/* 內容 */}
-      <div style={{ padding: '16px', flex: 1, paddingBottom: 80 }}>
+      <div style={{ padding: '16px', flex: 1, paddingBottom: 80, display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <div style={{ fontSize: 15, fontWeight: 500, color: '#3d2b1f' }}>我的群組</div>
           <button
@@ -311,7 +311,7 @@ const HomePage = () => {
           )
         })()}
 
-        <div style={{ marginTop: 32, textAlign: 'center', fontSize: 12, color: '#c4a882', lineHeight: 2 }}>
+        <div style={{ marginTop: 'auto', paddingTop: 32, textAlign: 'center', fontSize: 12, color: '#c4a882', lineHeight: 2 }}>
           <a href="/terms.html" style={{ color: '#b08060' }}>使用條款</a>
           {' ｜ '}
           <a href="/privacy.html" style={{ color: '#b08060' }}>隱私權政策</a>
