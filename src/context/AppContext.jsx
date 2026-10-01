@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { signInWithCustomToken, signOut, onAuthStateChanged } from 'firebase/auth'
+import { signInWithCustomToken, signInAnonymously, signOut, onAuthStateChanged } from 'firebase/auth'
 import { auth } from '../config/firebase'
 import { initLiff } from '../config/liff'
 
@@ -16,6 +16,32 @@ const stateStore = {
 }
 const TOKEN_EXCHANGE_URL = import.meta.env.VITE_TOKEN_EXCHANGE_URL
 const VERIFY_LIFF_TOKEN_URL = TOKEN_EXCHANGE_URL?.replace('/lineLogin', '/verifyLiffToken')
+const LINK_ANONYMOUS_URL = TOKEN_EXCHANGE_URL?.replace('/lineLogin', '/linkAnonymous')
+const CLAIM_MEMBER_URL = TOKEN_EXCHANGE_URL?.replace('/lineLogin', '/claimMember')
+
+const postJson = (url, idToken, body) => fetch(url, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+  body: JSON.stringify(body),
+})
+
+// 以 LINE 身分登入 Firebase；若登入前是匿名帳號，把匿名帳號的群組紀錄搬到 LINE 帳號
+const signInWithLineToken = async (firebaseToken) => {
+  await auth.authStateReady()
+  const anonIdToken = auth.currentUser?.isAnonymous ? await auth.currentUser.getIdToken() : null
+  const cred = await signInWithCustomToken(auth, firebaseToken)
+  if (!anonIdToken) return
+  const lineIdToken = await cred.user.getIdToken()
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await postJson(LINK_ANONYMOUS_URL, lineIdToken, { anonIdToken })
+      if (res.ok) return
+      console.error('linkAnonymous 失敗', await res.text())
+    } catch (e) {
+      console.error('linkAnonymous 失敗', e)
+    }
+  }
+}
 
 const buildRedirectUri = () => `${window.location.origin}/auth/callback`
 
@@ -79,7 +105,7 @@ export const AppProvider = ({ children }) => {
               })
               if (res.ok) {
                 const data = await res.json()
-                await signInWithCustomToken(auth, data.firebaseToken)
+                await signInWithLineToken(data.firebaseToken)
               } else {
                 console.error('verifyLiffToken 失敗', await res.text())
               }
@@ -150,6 +176,23 @@ export const AppProvider = ({ children }) => {
     setUser(null)
   }
 
+  // 不登入 LINE，以暱稱匿名加入（只能加入群組，不能建立）
+  const loginAsGuest = async (name) => {
+    const cred = await signInAnonymously(auth)
+    const u = { uid: cred.user.uid, name: name.trim(), avatar: null, anonymous: true }
+    setUser(u)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(u))
+    return u
+  }
+
+  // 認領群組內的虛擬成員，成功後自己就成為該群組成員
+  const claimMember = async (groupId, placeholderId) => {
+    const res = await postJson(CLAIM_MEMBER_URL, await auth.currentUser.getIdToken(), {
+      groupId, placeholderId, avatar: user.avatar ?? null,
+    })
+    if (!res.ok) throw new Error(`claim_failed: ${await res.text()}`)
+  }
+
   const completeOAuthCallback = async ({ code, state }) => {
     const savedState = stateStore.get()
     stateStore.remove()
@@ -172,7 +215,7 @@ export const AppProvider = ({ children }) => {
     }
 
     const data = await res.json()
-    await signInWithCustomToken(auth, data.firebaseToken)
+    await signInWithLineToken(data.firebaseToken)
     const u = {
       uid: data.userId,
       name: data.displayName,
@@ -184,7 +227,7 @@ export const AppProvider = ({ children }) => {
   }
 
   return (
-    <AppContext.Provider value={{ user, setUser, loading, loginWithLine, logout, completeOAuthCallback, liffInstance }}>
+    <AppContext.Provider value={{ user, setUser, loading, loginWithLine, loginAsGuest, claimMember, logout, completeOAuthCallback, liffInstance }}>
       {children}
     </AppContext.Provider>
   )

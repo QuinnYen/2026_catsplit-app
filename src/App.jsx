@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useApp } from './context/AppContext'
 import catLogo from './assets/cat-logo.webp'
@@ -24,7 +25,62 @@ const LoadingScreen = () => (
   </div>
 )
 
-const LoginScreen = ({ onLogin }) => (
+const GuestJoin = ({ onGuest }) => {
+  const [open, setOpen] = useState(false)
+  const [name, setName] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  const submit = async () => {
+    if (!name.trim() || busy) return
+    setBusy(true)
+    setError('')
+    try {
+      await onGuest(name)
+    } catch (e) {
+      console.error(e)
+      setError('無法以訪客身分加入，請稍後再試')
+      setBusy(false)
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        style={{ marginTop: 14, background: 'none', border: 'none', color: '#b08060', fontSize: 14, textDecoration: 'underline', cursor: 'pointer' }}
+      >
+        不登入，以訪客身分加入
+      </button>
+    )
+  }
+  return (
+    <div style={{ marginTop: 16, width: '100%', maxWidth: 320, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <input
+        autoFocus
+        value={name}
+        onChange={e => setName(e.target.value)}
+        onKeyDown={e => e.key === 'Enter' && submit()}
+        maxLength={20}
+        placeholder="輸入你的暱稱"
+        style={{ border: '0.5px solid #FF8C42', borderRadius: 12, padding: '12px 14px', fontSize: 15, color: '#3d2b1f', outline: 'none', background: '#fff' }}
+      />
+      <button
+        onClick={submit}
+        disabled={!name.trim() || busy}
+        style={{ padding: '12px 0', borderRadius: 12, border: 'none', fontSize: 15, fontWeight: 500, color: '#fff', background: !name.trim() || busy ? '#e0c4b0' : '#FF8C42', cursor: !name.trim() || busy ? 'not-allowed' : 'pointer' }}
+      >
+        {busy ? '處理中...' : '繼續'}
+      </button>
+      {error && <div style={{ fontSize: 13, color: '#c0392b', textAlign: 'center' }}>{error}</div>}
+      <div style={{ fontSize: 12, color: '#c4a882', textAlign: 'center', lineHeight: 1.5 }}>
+        訪客身分只存在這個瀏覽器，之後可綁定 LINE 帳號保留紀錄
+      </div>
+    </div>
+  )
+}
+
+const LoginScreen = ({ onLogin, onGuest }) => (
   <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #fff8f4 0%, #ffe8d6 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px' }}>
     <img src={catLogo} alt="貓咪分帳 CatSplit" style={{ width: 120, height: 120, marginBottom: 16 }} />
     <div style={{ fontSize: 24, fontWeight: 700, color: '#3d2b1f', marginBottom: 8 }}>貓咪分帳 CatSplit</div>
@@ -62,20 +118,23 @@ const LoginScreen = ({ onLogin }) => (
       </svg>
       使用 LINE 登入
     </button>
+    {onGuest && <GuestJoin onGuest={onGuest} />}
   </div>
 )
 
 const ProtectedRoutes = () => {
-  const { user, loading, loginWithLine } = useApp()
+  const { user, loading, loginWithLine, loginAsGuest } = useApp()
   const location = useLocation()
   if (loading) return <LoadingScreen />
   // 登入後要回到原本開啟的頁面（例如邀請連結的群組頁）
-  if (!user) return <LoginScreen onLogin={() => loginWithLine(location.pathname + location.search)} />
+  // 只有邀請連結（群組頁）提供訪客加入；訪客不能建立群組
+  const isInviteLink = /^\/group\/[^/]+\/?$/.test(location.pathname)
+  if (!user) return <LoginScreen onLogin={() => loginWithLine(location.pathname + location.search)} onGuest={isInviteLink ? loginAsGuest : undefined} />
 
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
-      <Route path="/create" element={<CreateGroupPage />} />
+      <Route path="/create" element={user.anonymous ? <Navigate to="/" /> : <CreateGroupPage />} />
       <Route path="/group/:id" element={<GroupPage />} />
       <Route path="/group/:id/add" element={<AddExpensePage />} />
       <Route path="/group/:id/settle" element={<SettlePage />} />

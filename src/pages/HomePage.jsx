@@ -172,7 +172,7 @@ const HomePage = () => {
             </div>
           </div>
           <button
-            onClick={() => { if (confirm('確定要登出嗎？')) logout() }}
+            onClick={() => { if (confirm(user?.anonymous ? '訪客身分只存在這個瀏覽器，登出後將無法找回你在群組中的紀錄。\n建議先綁定 LINE 帳號。確定要登出嗎？' : '確定要登出嗎？')) logout() }}
             style={{ background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.35)', borderRadius: 20, padding: '5px 12px', fontSize: 12, color: '#fff', cursor: 'pointer' }}
           >
             登出
@@ -195,13 +195,27 @@ const HomePage = () => {
       <div style={{ padding: '16px', flex: 1, paddingBottom: 80, display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <div style={{ fontSize: 15, fontWeight: 500, color: '#3d2b1f' }}>我的群組</div>
-          <button
-            onClick={() => navigate('/create')}
-            style={{ background: '#FF8C42', color: '#fff', border: 'none', borderRadius: 20, padding: '7px 14px', fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}
-          >
-            ＋ 建立群組
-          </button>
+          {!user?.anonymous && (
+            <button
+              onClick={() => navigate('/create')}
+              style={{ background: '#FF8C42', color: '#fff', border: 'none', borderRadius: 20, padding: '7px 14px', fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}
+            >
+              ＋ 建立群組
+            </button>
+          )}
         </div>
+
+        {user?.anonymous && (
+          <div style={{ background: '#fff3ec', border: '0.5px solid #f0d5c0', borderRadius: 14, padding: 12, marginBottom: 12, fontSize: 12, color: '#b08060', lineHeight: 1.6 }}>
+            你目前是訪客身分，紀錄只存在這個瀏覽器，且無法建立群組。綁定 LINE 帳號後，現有群組與帳目都會保留。
+            <button
+              onClick={() => loginWithLine('/')}
+              style={{ display: 'block', marginTop: 8, padding: '8px 14px', borderRadius: 10, border: 'none', background: '#06C755', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+            >
+              綁定 LINE 帳號
+            </button>
+          </div>
+        )}
 
         {/* 載入中 */}
         {loading && (

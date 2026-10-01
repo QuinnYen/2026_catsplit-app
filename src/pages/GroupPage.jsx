@@ -15,7 +15,7 @@ import { deleteFileByPath } from '../utils/storageCleanup'
 
 const GroupPage = () => {
   const { id } = useParams()
-  const { user } = useApp()
+  const { user, claimMember } = useApp()
   const navigate = useNavigate()
   const [group, setGroup] = useState(null)
   const [expenses, setExpenses] = useState([])
@@ -165,6 +165,20 @@ const GroupPage = () => {
     }
   }
 
+  const handleClaim = async (placeholderId) => {
+    if (!window.confirm(`確定你就是「${group.memberProfiles?.[placeholderId]?.name}」嗎？
+認領後，這個名字底下的帳目都會算在你身上。`)) return
+    setJoining(true)
+    setJoinError('')
+    try {
+      await claimMember(id, placeholderId)
+    } catch (error) {
+      console.error('認領失敗', error)
+      setJoinError('認領失敗，可能已被其他人認領，請重新整理後再試')
+      setJoining(false)
+    }
+  }
+
   const handleJoin = async () => {
     setJoining(true)
     setJoinError('')
@@ -207,6 +221,7 @@ const GroupPage = () => {
   // 未加入成員 → 顯示加入畫面
   if (!isMember) {
     const profiles = Object.values(group.memberProfiles || {})
+    const placeholders = (group.members || []).filter(m => group.memberProfiles?.[m]?.placeholder)
     return (
       <div style={{ minHeight: '100vh', background: '#fff8f4', display: 'flex', flexDirection: 'column' }}>
         <div style={{ background: 'linear-gradient(135deg, #FF8C42 0%, #FF6B1A 100%)', padding: '16px 16px 32px', position: 'relative', overflow: 'hidden' }}>
@@ -245,11 +260,31 @@ const GroupPage = () => {
               <Avatar src={user?.avatar} name={user?.name} size={40} />
               <div>
                 <div style={{ fontSize: 14, fontWeight: 500, color: '#3d2b1f' }}>{user?.name}</div>
-                <div style={{ fontSize: 12, color: '#b08060', marginTop: 2 }}>LINE 帳號</div>
+                <div style={{ fontSize: 12, color: '#b08060', marginTop: 2 }}>{user?.anonymous ? '訪客' : 'LINE 帳號'}</div>
               </div>
               <Check size={18} color="#FF8C42" strokeWidth={3} style={{ marginLeft: 'auto', flexShrink: 0 }} />
             </div>
           </div>
+          {placeholders.length > 0 && (
+            <div style={{ background: '#fff', borderRadius: 16, border: '0.5px solid #f0d5c0', padding: 14 }}>
+              <div style={{ fontSize: 12, fontWeight: 500, color: '#b08060', marginBottom: 4 }}>或者，你是下面其中一位嗎？</div>
+              <div style={{ fontSize: 11, color: '#c4a882', marginBottom: 10 }}>群組已經幫你記了帳，認領後就能接手這個名字</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {placeholders.map(pid => (
+                  <button
+                    key={pid}
+                    onClick={() => handleClaim(pid)}
+                    disabled={joining}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fff3ec', border: 'none', borderRadius: 12, padding: '10px 12px', cursor: joining ? 'not-allowed' : 'pointer', textAlign: 'left' }}
+                  >
+                    <Avatar src={null} name={group.memberProfiles[pid].name} size={36} />
+                    <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: '#3d2b1f' }}>{group.memberProfiles[pid].name}</span>
+                    <span style={{ fontSize: 12, color: '#FF8C42' }}>我是他</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div style={{ flex: 1 }} />
           {joinError && (
             <div style={{ fontSize: 13, color: '#c0392b', textAlign: 'center' }}>{joinError}</div>
@@ -263,7 +298,7 @@ const GroupPage = () => {
               background: joining ? '#e0c4b0' : '#FF8C42', color: '#fff',
             }}
           >
-            {joining ? '加入中...' : `加入「${group.name}」`}
+            {joining ? '處理中...' : placeholders.length > 0 ? `以新成員加入「${group.name}」` : `加入「${group.name}」`}
           </button>
           <button
             onClick={() => navigate('/')}

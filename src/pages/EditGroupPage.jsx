@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { doc, getDoc, updateDoc, arrayRemove, collection, getDocs, writeBatch } from 'firebase/firestore'
+import { doc, getDoc, updateDoc, arrayRemove, arrayUnion, collection, getDocs, writeBatch } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
 import imageCompression from 'browser-image-compression'
 import { db, storage } from '../config/firebase'
@@ -28,6 +28,8 @@ const EditGroupPage = () => {
   const [deleting, setDeleting] = useState(false)
   const [archiving, setArchiving] = useState(false)
   const [leaving, setLeaving] = useState(false)
+  const [placeholderName, setPlaceholderName] = useState('')
+  const [addingPlaceholder, setAddingPlaceholder] = useState(false)
 
   useEffect(() => {
     const fetch = async () => {
@@ -133,6 +135,35 @@ const EditGroupPage = () => {
     setGroup(prev => ({ ...prev, memberProfiles: updatedProfiles }))
     setRenamingUid(null)
     setRenameSaving(false)
+  }
+
+  // 虛擬成員：還沒加入 App 的朋友，先用名字記帳，之後本人點邀請連結時認領
+  const handleAddPlaceholder = async () => {
+    const trimmed = placeholderName.trim()
+    if (!trimmed || addingPlaceholder) return
+    if (group.members.length >= 50) {
+      alert('群組已達 50 人上限')
+      return
+    }
+    setAddingPlaceholder(true)
+    try {
+      const pid = `p_${crypto.randomUUID().replace(/-/g, '').slice(0, 20)}`
+      const profile = { name: trimmed, avatar: null, placeholder: true }
+      await updateDoc(doc(db, 'groups', id), {
+        members: arrayUnion(pid),
+        [`memberProfiles.${pid}`]: profile,
+      })
+      setGroup(prev => ({
+        ...prev,
+        members: [...prev.members, pid],
+        memberProfiles: { ...prev.memberProfiles, [pid]: profile },
+      }))
+      setPlaceholderName('')
+    } catch (error) {
+      console.error('新增虛擬成員失敗', error)
+      alert('新增失敗，請稍後再試')
+    }
+    setAddingPlaceholder(false)
   }
 
   const handleDeleteGroup = async () => {
@@ -324,6 +355,9 @@ const EditGroupPage = () => {
                       {isCreatorMember && (
                         <div style={{ fontSize: 11, color: '#FF8C42' }}>建立者</div>
                       )}
+                      {profile?.placeholder && (
+                        <div style={{ fontSize: 11, color: '#b08060' }}>尚未加入，朋友從邀請連結認領</div>
+                      )}
                     </div>
                     <button
                       onClick={() => { setRenamingUid(isRenaming ? null : uid); setRenameInput(profile?.name || '') }}
@@ -375,6 +409,29 @@ const EditGroupPage = () => {
                 </div>
               )
             })}
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+            <input
+              type="text"
+              value={placeholderName}
+              onChange={e => setPlaceholderName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleAddPlaceholder()}
+              maxLength={20}
+              placeholder="新增還沒加入的朋友（輸入名字）"
+              style={{ flex: 1, minWidth: 0, border: '0.5px solid #f0d5c0', borderRadius: 10, padding: '10px 12px', fontSize: 14, color: '#3d2b1f', outline: 'none', background: '#fff8f4' }}
+            />
+            <button
+              onClick={handleAddPlaceholder}
+              disabled={addingPlaceholder || !placeholderName.trim()}
+              style={{
+                padding: '10px 16px', borderRadius: 10, border: 'none', fontSize: 13, fontWeight: 500, flexShrink: 0,
+                cursor: addingPlaceholder || !placeholderName.trim() ? 'not-allowed' : 'pointer',
+                background: addingPlaceholder || !placeholderName.trim() ? '#e0c4b0' : '#FF8C42', color: '#fff',
+              }}
+            >
+              {addingPlaceholder ? '新增中' : '新增'}
+            </button>
           </div>
 
           {!isCreator && (
