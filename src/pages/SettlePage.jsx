@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { doc, collection, getDoc, getDocs } from 'firebase/firestore'
 import { AlertTriangle, Check, CheckCircle2, PartyPopper } from 'lucide-react'
 import { db } from '../config/firebase'
-import { useApp } from '../context/AppContext'
 import TabBar from '../components/TabBar'
 import Avatar from '../components/Avatar'
 import GroupIcon from '../components/GroupIcon'
@@ -14,7 +13,6 @@ import useExchangeRate from '../hooks/useExchangeRate'
 const SettlePage = () => {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { user } = useApp()
   const [group, setGroup] = useState(null)
   const [expenses, setExpenses] = useState([])
   const [settledRecords, setSettledRecords] = useState([])
@@ -108,9 +106,7 @@ const SettlePage = () => {
   const fmt = (amount) => `${dispCurr.symbol} ${Math.round(amount * displayRate).toLocaleString()}`
 
   const total = expenses.reduce((sum, e) => sum + e.amount, 0)
-  const myTotal = expenses.reduce((sum, e) => sum + (e.splits?.[user?.uid] || 0), 0)
   const totalText = rateLoading ? '...' : fmt(total)
-  const myText = rateLoading ? '...' : fmt(myTotal)
 
   // 金額位數多時逐級縮小字體，最後才用「…」截斷
   const amountStyle = (text) => ({
@@ -151,7 +147,7 @@ const SettlePage = () => {
           </div>
 
           {/* 貨幣選單 + 總支出 */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <select
                 value={displayCurrency}
@@ -169,11 +165,6 @@ const SettlePage = () => {
             <div style={{ flex: 1, minWidth: 0, textAlign: 'right' }}>
               <div style={{ ...amountStyle(totalText), fontWeight: 500, color: '#FF6B1A' }}>{totalText}</div>
             </div>
-          </div>
-
-          <div style={{ background: '#fff3ec', borderRadius: 12, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-            <div style={{ fontSize: 13, color: '#b08060', flexShrink: 0 }}>我要付</div>
-            <div style={{ ...amountStyle(myText), minWidth: 0, fontWeight: 500, color: '#FF6B1A' }}>{myText}</div>
           </div>
         </div>
 
