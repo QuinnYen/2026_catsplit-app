@@ -89,6 +89,20 @@ const generateState = () => {
 
 const isInLineApp = () => /Line/i.test(navigator.userAgent)
 
+// 邀請連結（群組首頁）。從 liff.line.me 開啟時，路徑可能還放在 liff.state 參數裡
+const isInvitePath = () => {
+  const path = new URLSearchParams(window.location.search).get('liff.state') || window.location.pathname
+  return /^\/group\/[^/?]+\/?(\?|$)/.test(path)
+}
+
+const readCachedUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY))
+  } catch {
+    return null
+  }
+}
+
 export const AppProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -143,8 +157,9 @@ export const AppProvider = ({ children }) => {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(u))
             return
           }
-          if (liff.isInClient()) {
-            // 在 LINE 內建瀏覽器但未登入 → 自動觸發 LIFF 授權
+          // 在 LINE 內建瀏覽器但未登入 → 自動觸發 LIFF 授權。
+          // 例外：邀請連結要讓使用者選 LINE 或訪客；已是訪客的人也不強迫登入 LINE
+          if (liff.isInClient() && !isInvitePath() && !readCachedUser()?.guest) {
             keepLoading = true
             const currentPath = window.location.pathname + window.location.search
             liff.login({ redirectUri: `${window.location.origin}${currentPath}` })
@@ -201,24 +216,37 @@ export const AppProvider = ({ children }) => {
     setUser(null)
   }
 
-  // 不登入 LINE，選一個訪客名字使用（uid 即該名字的成員 id，同一時間只代表一個群組）。
-  // 最多記住 MAX_GUEST_NAMES 個群組的名字，超過要用 LINE 登入（丟出 guest_limit）
-  const loginAsGuest = async (groupId, memberId) => {
+  // 不登入 LINE，以訪客名字使用（uid 即該名字的成員 id，同一時間只代表一個群組）。
+  // body 為 { memberId }（選既有名字）或 { name }（自己輸入新名字）。
+  // 最多記住 MAX_GUEST_NAMES 個群組的名字，超過要用 LINE 登入（丟出 guest_limit）；
+  // 其他失敗丟出 functions 回傳的錯誤碼（name_taken、group_full、guest_not_found…）
+  const guestSignIn = async (groupId, body) => {
     const others = readGuestNames().filter(g => g.groupId !== groupId)
     if (others.length >= MAX_GUEST_NAMES) throw new Error('guest_limit')
-    const res = await postJson(GUEST_LOGIN_URL, null, { groupId, memberId })
+    const res = await postJson(GUEST_LOGIN_URL, null, { groupId, ...body })
     if (!res.ok) {
       // 名字已被認領或移除，從記錄中拿掉
       if (res.status === 404) writeGuestNames(others)
-      throw new Error(`guest_login_failed: ${res.status}`)
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || `guest_login_failed_${res.status}`)
     }
     const data = await res.json()
     await signInWithCustomToken(auth, data.firebaseToken)
-    writeGuestNames([{ groupId, memberId, name: data.name }, ...others])
-    const u = { uid: memberId, name: data.name, avatar: null, guest: true, groupId }
+    writeGuestNames([{ groupId, memberId: data.memberId, name: data.name }, ...others])
+    const u = { uid: data.memberId, name: data.name, avatar: null, guest: true, groupId }
     setUser(u)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(u))
     return u
+  }
+  const loginAsGuest = (groupId, memberId) => guestSignIn(groupId, { memberId })
+  const joinAsGuest = (groupId, name) => guestSignIn(groupId, { name: name.trim() })
+
+  // 訪客選錯名字：只忘掉這個群組的名字並登出，回到邀請畫面重選；其他群組的名字保留
+  const forgetGuestName = (groupId) => {
+    writeGuestNames(readGuestNames().filter(g => g.groupId !== groupId))
+    localStorage.removeItem(STORAGE_KEY)
+    signOut(auth).catch(() => {})
+    setUser(null)
   }
 
   // 訪客進入另一個選過名字的群組時，自動切換成該群組的名字。
@@ -273,7 +301,7 @@ export const AppProvider = ({ children }) => {
   }
 
   return (
-    <AppContext.Provider value={{ user, setUser, loading, loginWithLine, loginAsGuest, switchGuestGroup, guestNames: user?.guest ? readGuestNames() : [], claimMember, logout, completeOAuthCallback, liffInstance }}>
+    <AppContext.Provider value={{ user, setUser, loading, loginWithLine, loginAsGuest, joinAsGuest, forgetGuestName, switchGuestGroup, guestNames: user?.guest ? readGuestNames() : [], claimMember, logout, completeOAuthCallback, liffInstance }}>
       {children}
     </AppContext.Provider>
   )

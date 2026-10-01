@@ -4,7 +4,8 @@ import { doc, collection, onSnapshot, orderBy, query, deleteDoc, getDocs, update
 
 import { Check, Plus, Calculator, X, Receipt, Search, Trash2, Pencil, MoreVertical, ChevronRight } from 'lucide-react'
 import { db } from '../config/firebase'
-import { useApp, MAX_GUEST_NAMES } from '../context/AppContext'
+import { useApp } from '../context/AppContext'
+import GuestJoin from '../components/GuestJoin'
 import TabBar from '../components/TabBar'
 import Avatar from '../components/Avatar'
 import GroupIcon from '../components/GroupIcon'
@@ -15,7 +16,7 @@ import { deleteFileByPath } from '../utils/storageCleanup'
 
 const GroupPage = () => {
   const { id } = useParams()
-  const { user, claimMember, loginAsGuest } = useApp()
+  const { user, claimMember, forgetGuestName } = useApp()
   const navigate = useNavigate()
   const [group, setGroup] = useState(null)
   const [expenses, setExpenses] = useState([])
@@ -166,24 +167,18 @@ const GroupPage = () => {
     }
   }
 
-  // LINE 使用者：認領後鎖定這個名字；訪客：在這個群組使用這個名字（最多 MAX_GUEST_NAMES 個群組）
+  // LINE 使用者認領訪客名字：之後這個名字只有本人能用
   const handleClaim = async (placeholderId) => {
     const name = group.memberProfiles?.[placeholderId]?.name
-    const message = user.guest
-      ? `以「${name}」使用這個群組？`
-      : `確定你就是「${name}」嗎？
-認領後，這個名字底下的帳目都會算在你的 LINE 帳號，其他人就不能再選這個名字。`
-    if (!window.confirm(message)) return
+    if (!window.confirm(`確定你就是「${name}」嗎？
+認領後，這個名字底下的帳目都會算在你的 LINE 帳號，其他人就不能再選這個名字。`)) return
     setJoining(true)
     setJoinError('')
     try {
-      if (user.guest) await loginAsGuest(id, placeholderId)
-      else await claimMember(id, placeholderId)
+      await claimMember(id, placeholderId)
     } catch (error) {
       console.error('認領失敗', error)
-      setJoinError(error.message === 'guest_limit'
-        ? `訪客最多使用 ${MAX_GUEST_NAMES} 個群組，請用 LINE 登入`
-        : '認領失敗，可能已被其他人認領，請重新整理後再試')
+      setJoinError('認領失敗，可能已被其他人認領，請重新整理後再試')
       setJoining(false)
     }
   }
@@ -274,12 +269,14 @@ const GroupPage = () => {
               <Check size={18} color="#FF8C42" strokeWidth={3} style={{ marginLeft: 'auto', flexShrink: 0 }} />
             </div>
           </div>}
-          {placeholders.length > 0 && (
+          {/* 訪客（已在其他群組用訪客名字）：輸入新名字或選既有名字 */}
+          {user.guest && (
+            <GuestJoin groupId={id} guests={placeholders.map(pid => ({ id: pid, name: group.memberProfiles[pid].name }))} />
+          )}
+          {!user.guest && placeholders.length > 0 && (
             <div style={{ background: '#fff', borderRadius: 16, border: '0.5px solid #f0d5c0', padding: 14 }}>
-              <div style={{ fontSize: 12, fontWeight: 500, color: '#b08060', marginBottom: 4 }}>{user.guest ? '選擇你的名字' : '或者，你是下面其中一位嗎？'}</div>
-              <div style={{ fontSize: 11, color: '#c4a882', marginBottom: 10 }}>
-                {user.guest ? '訪客名字任何拿到連結的人都能選' : '群組已經幫你記了帳，認領後就能接手這個名字'}
-              </div>
+              <div style={{ fontSize: 12, fontWeight: 500, color: '#b08060', marginBottom: 4 }}>或者，你是下面其中一位嗎？</div>
+              <div style={{ fontSize: 11, color: '#c4a882', marginBottom: 10 }}>群組已經幫你記了帳，認領後就能接手這個名字</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {placeholders.map(pid => (
                   <button
@@ -294,11 +291,6 @@ const GroupPage = () => {
                   </button>
                 ))}
               </div>
-            </div>
-          )}
-          {user.guest && placeholders.length === 0 && (
-            <div style={{ fontSize: 13, color: '#b08060', textAlign: 'center', lineHeight: 1.6 }}>
-              這個群組沒有可選的訪客名字，請用 LINE 登入後加入
             </div>
           )}
           <div style={{ flex: 1 }} />
@@ -436,6 +428,17 @@ const GroupPage = () => {
 
       {/* 操作按鈕 */}
       <div style={{ padding: '16px 16px 0' }}>
+        {user.guest && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff3ec', border: '0.5px solid #f0d5c0', borderRadius: 12, padding: '8px 12px', marginBottom: 12, fontSize: 12, color: '#b08060' }}>
+            <span style={{ flex: 1, minWidth: 0 }}>你目前是「{group.memberProfiles?.[user.uid]?.name}」（訪客）</span>
+            <button
+              onClick={() => { if (window.confirm('換成其他名字？\n這個名字的帳目不會受影響。')) forgetGuestName(id) }}
+              style={{ background: 'none', border: 'none', padding: 0, fontSize: 12, color: '#FF6B1A', textDecoration: 'underline', cursor: 'pointer', flexShrink: 0 }}
+            >
+              不是你？
+            </button>
+          </div>
+        )}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
           <button
             onClick={() => navigate(`/group/${id}/add`)}

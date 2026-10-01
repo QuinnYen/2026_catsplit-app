@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { useApp, fetchGuestList, MAX_GUEST_NAMES } from './context/AppContext'
+import { useApp } from './context/AppContext'
+import GuestJoin from './components/GuestJoin'
 import catLogo from './assets/cat-logo.webp'
 import { MessageCircle, PawPrint, Wallet } from 'lucide-react'
 
@@ -25,61 +26,7 @@ const LoadingScreen = () => (
   </div>
 )
 
-// 邀請連結頁：列出群組的訪客名字，點選即可免登入使用（名字不鎖定，換裝置再點一次即可）
-const GuestPicker = ({ groupId, onPick }) => {
-  const [guests, setGuests] = useState(null)
-  const [busyId, setBusyId] = useState(null)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    fetchGuestList(groupId)
-      .then(data => setGuests(data.guests))
-      .catch(e => {
-        console.error(e)
-        setGuests([])
-      })
-  }, [groupId])
-
-  const pick = async (memberId) => {
-    if (busyId) return
-    setBusyId(memberId)
-    setError('')
-    try {
-      await onPick(groupId, memberId)
-    } catch (e) {
-      console.error(e)
-      setError(e.message === 'guest_limit'
-        ? `訪客最多使用 ${MAX_GUEST_NAMES} 個群組，請用 LINE 登入`
-        : '無法使用這個名字，請重新整理後再試')
-      setBusyId(null)
-    }
-  }
-
-  if (!guests?.length) return null
-  return (
-    <div style={{ marginTop: 20, width: '100%', maxWidth: 320 }}>
-      <div style={{ fontSize: 13, color: '#b08060', textAlign: 'center', marginBottom: 10 }}>或免登入，選擇你的名字</div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-        {guests.map(g => (
-          <button
-            key={g.id}
-            onClick={() => pick(g.id)}
-            disabled={!!busyId}
-            style={{ padding: '8px 16px', borderRadius: 20, border: '0.5px solid #f0d5c0', background: busyId === g.id ? '#FF8C42' : '#fff', color: busyId === g.id ? '#fff' : '#3d2b1f', fontSize: 14, cursor: busyId ? 'not-allowed' : 'pointer' }}
-          >
-            {g.name}
-          </button>
-        ))}
-      </div>
-      {error && <div style={{ fontSize: 13, color: '#c0392b', textAlign: 'center', marginTop: 8 }}>{error}</div>}
-      <div style={{ fontSize: 12, color: '#c4a882', textAlign: 'center', lineHeight: 1.5, marginTop: 10 }}>
-        訪客名字任何拿到連結的人都能選，用 LINE 登入後認領就只有你能用
-      </div>
-    </div>
-  )
-}
-
-const LoginScreen = ({ onLogin, guestGroupId, onGuest }) => (
+const LoginScreen = ({ onLogin, guestGroupId }) => (
   <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #fff8f4 0%, #ffe8d6 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px' }}>
     <img src={catLogo} alt="貓咪分帳 CatSplit" style={{ width: 120, height: 120, marginBottom: 16 }} />
     <div style={{ fontSize: 24, fontWeight: 700, color: '#3d2b1f', marginBottom: 8 }}>貓咪分帳 CatSplit</div>
@@ -117,12 +64,16 @@ const LoginScreen = ({ onLogin, guestGroupId, onGuest }) => (
       </svg>
       使用 LINE 登入
     </button>
-    {guestGroupId && <GuestPicker groupId={guestGroupId} onPick={onGuest} />}
+    {guestGroupId && (
+      <div style={{ marginTop: 20, width: '100%', display: 'flex', justifyContent: 'center' }}>
+        <GuestJoin groupId={guestGroupId} />
+      </div>
+    )}
   </div>
 )
 
 const ProtectedRoutes = () => {
-  const { user, loading, loginWithLine, loginAsGuest, switchGuestGroup, guestNames } = useApp()
+  const { user, loading, loginWithLine, switchGuestGroup, guestNames } = useApp()
   const location = useLocation()
   // 訪客進入另一個選過名字的群組時，先自動切換成該群組的名字再顯示頁面
   const pathGroupId = location.pathname.match(/^\/group\/([^/]+)/)?.[1]
@@ -136,7 +87,7 @@ const ProtectedRoutes = () => {
   // 登入後要回到原本開啟的頁面（例如邀請連結的群組頁）
   // 只有邀請連結（群組頁）提供訪客名字；訪客不能建立群組
   const inviteGroupId = location.pathname.match(/^\/group\/([^/]+)\/?$/)?.[1]
-  if (!user) return <LoginScreen onLogin={() => loginWithLine(location.pathname + location.search)} guestGroupId={inviteGroupId} onGuest={loginAsGuest} />
+  if (!user) return <LoginScreen onLogin={() => loginWithLine(location.pathname + location.search)} guestGroupId={inviteGroupId} />
 
   return (
     <Routes>

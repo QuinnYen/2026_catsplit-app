@@ -2,7 +2,8 @@ import { onRequest } from 'firebase-functions/v2/https'
 import { defineSecret } from 'firebase-functions/params'
 import { initializeApp } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
-import { getFirestore } from 'firebase-admin/firestore'
+import { getFirestore, FieldValue } from 'firebase-admin/firestore'
+import { randomBytes } from 'node:crypto'
 
 initializeApp()
 
@@ -242,11 +243,35 @@ const guestList = (group) => group.members
   .filter((m) => isGuestId(m) && group.memberProfiles?.[m]?.placeholder)
   .map((m) => ({ id: m, name: group.memberProfiles[m].name }))
 
+const MAX_MEMBERS = 50
+const normalizeName = (n) => n.normalize('NFKC').trim().toLowerCase()
+
+// 以訪客自己輸入的名字新增一位虛擬成員；同名（忽略大小寫與全半形）視為已存在
+const createGuest = (groupId, name) => {
+  const db = getFirestore()
+  const groupRef = db.doc(`groups/${groupId}`)
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(groupRef)
+    const group = snap.data()
+    const key = normalizeName(name)
+    const taken = Object.values(group.memberProfiles || {}).some((p) => normalizeName(p?.name || '') === key)
+    if (taken) return { error: 'name_taken' }
+    if (group.members.length >= MAX_MEMBERS) return { error: 'group_full' }
+    const memberId = `p_${randomBytes(10).toString('hex')}`
+    tx.update(groupRef, {
+      members: FieldValue.arrayUnion(memberId),
+      [`memberProfiles.${memberId}`]: { name, avatar: null, placeholder: true },
+    })
+    return { memberId }
+  })
+}
+
 /**
  * 訪客登入：不需要登入即可呼叫，持有群組連結即可。
- * - body { groupId }：回傳群組名稱與可選的訪客名字
- * - body { groupId, memberId }：以該訪客名字登入，回傳 Firebase custom token（uid 即 memberId）
- * 訪客名字不鎖定，誰都能選；想鎖定請綁定 LINE（見 claimMember）。
+ * - body { groupId }：回傳群組名稱與已有的訪客名字
+ * - body { groupId, memberId }：以既有訪客名字登入
+ * - body { groupId, name }：以自己輸入的名字新增訪客並登入（與群組內任何成員同名時回 409 name_taken）
+ * 登入回傳 Firebase custom token（uid 即 memberId）。訪客名字不鎖定，誰都能選；想鎖定請綁定 LINE（見 claimMember）。
  */
 export const guestLogin = onRequest(
   { cors: false, region: 'asia-east1', maxInstances: 5 },
@@ -261,23 +286,37 @@ export const guestLogin = onRequest(
       return
     }
 
-    const { groupId, memberId } = req.body || {}
+    const { groupId, memberId, name } = req.body || {}
     try {
       const group = await readGroup(groupId)
       if (!group) {
         res.status(404).json({ error: 'group_not_found' })
         return
       }
-      if (memberId === undefined) {
+
+      let guestId = memberId
+      if (name !== undefined) {
+        const trimmed = typeof name === 'string' ? name.trim() : ''
+        if (trimmed.length < 1 || trimmed.length > 20) {
+          res.status(400).json({ error: 'invalid_name' })
+          return
+        }
+        const result = await createGuest(groupId, trimmed)
+        if (result.error) {
+          res.status(409).json({ error: result.error })
+          return
+        }
+        guestId = result.memberId
+      } else if (memberId === undefined) {
         res.json({ groupName: group.name, guests: guestList(group) })
         return
-      }
-      if (!guestList(group).some((g) => g.id === memberId)) {
+      } else if (!guestList(group).some((g) => g.id === memberId)) {
         res.status(404).json({ error: 'guest_not_found' })
         return
       }
-      const firebaseToken = await getAuth().createCustomToken(memberId, { guest: true, groupId })
-      res.json({ firebaseToken, name: group.memberProfiles[memberId].name })
+
+      const firebaseToken = await getAuth().createCustomToken(guestId, { guest: true, groupId })
+      res.json({ firebaseToken, memberId: guestId, name: name !== undefined ? name.trim() : group.memberProfiles[guestId].name })
     } catch (e) {
       console.error('guestLogin error', e)
       res.status(500).json({ error: 'internal_error' })
