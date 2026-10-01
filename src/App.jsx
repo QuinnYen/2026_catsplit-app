@@ -30,11 +30,12 @@ const LoginScreen = ({ onLogin, guestGroupId }) => (
   <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #fff8f4 0%, #ffe8d6 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px' }}>
     <img src={catLogo} alt="貓咪分帳 CatSplit" style={{ width: 120, height: 120, marginBottom: 16 }} />
     <div style={{ fontSize: 24, fontWeight: 700, color: '#3d2b1f', marginBottom: 8 }}>貓咪分帳 CatSplit</div>
-    <div style={{ fontSize: 14, color: '#b08060', marginBottom: 48, textAlign: 'center', lineHeight: 1.6 }}>
-      貓咪幫你分帳，輕鬆搞定朋友借錢
+    <div style={{ fontSize: 14, color: '#b08060', marginBottom: guestGroupId ? 24 : 48, textAlign: 'center', lineHeight: 1.6 }}>
+      {guestGroupId ? '你被邀請加入分帳群組！' : '貓咪幫你分帳，輕鬆搞定朋友借錢'}
     </div>
 
-    <div style={{ background: '#fff', borderRadius: 20, border: '0.5px solid #f0d5c0', padding: '24px 20px', width: '100%', maxWidth: 320, marginBottom: 32 }}>
+    {/* 邀請連結頁省略說明卡，讓訪客入口不用捲動就看得到 */}
+    {!guestGroupId && <div style={{ background: '#fff', borderRadius: 20, border: '0.5px solid #f0d5c0', padding: '24px 20px', width: '100%', maxWidth: 320, marginBottom: 32 }}>
       <div style={{ fontSize: 13, fontWeight: 500, color: '#b08060', marginBottom: 16, textAlign: 'center' }}>如何開始使用</div>
       {[
         { Icon: MessageCircle, text: '使用 LINE 帳號登入' },
@@ -48,7 +49,7 @@ const LoginScreen = ({ onLogin, guestGroupId }) => (
           <div style={{ fontSize: 14, color: '#3d2b1f' }}>{text}</div>
         </div>
       ))}
-    </div>
+    </div>}
 
     <button
       onClick={onLogin}
