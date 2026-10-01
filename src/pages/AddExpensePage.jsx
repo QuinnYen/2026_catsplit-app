@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { collection, addDoc, Timestamp, serverTimestamp, doc, getDoc, updateDoc, increment } from 'firebase/firestore'
+import { collection, writeBatch, Timestamp, serverTimestamp, doc, getDoc, updateDoc, increment } from 'firebase/firestore'
 import { ref, uploadBytes } from 'firebase/storage'
 import { CheckCircle2 } from 'lucide-react'
 import { db, storage } from '../config/firebase'
@@ -116,7 +116,9 @@ const AddExpensePage = () => {
       const payments = buildPayments({ multiPayer, paidBy, payerAmounts, totalAmount })
       const { rate, baseAmount, baseSplits, basePayments } = applyExchangeRate({ totalAmount, splits, payments, currency, baseCurrency, exchangeRate })
 
-      const docRef = await addDoc(collection(db, 'groups', id, 'expenses'), {
+      const batch = writeBatch(db)
+      const docRef = doc(collection(db, 'groups', id, 'expenses'))
+      batch.set(docRef, {
         title: title.trim(),
         category,
         currency,
@@ -132,14 +134,6 @@ const AddExpensePage = () => {
         addedAt: serverTimestamp(),
       })
 
-      try {
-        const receiptPath = await uploadReceipt(docRef.id)
-        if (receiptPath) await updateDoc(docRef, { receiptPath })
-      } catch (uploadErr) {
-        console.error('收據上傳失敗', uploadErr)
-        alert('支出已儲存，但收據上傳失敗：' + (uploadErr?.code || uploadErr?.message || '未知錯誤'))
-      }
-
       // 付款人可能也在分攤名單內，需先合併再寫入，避免同一個 key 互相覆蓋
       const netDelta = { ...basePayments }
       Object.entries(baseSplits).forEach(([uid, amt]) => {
@@ -149,11 +143,20 @@ const AddExpensePage = () => {
       Object.entries(netDelta).forEach(([uid, amt]) => {
         balanceDelta[`memberBalances.${uid}`] = increment(amt)
       })
-      await updateDoc(doc(db, 'groups', id), {
+      batch.update(doc(db, 'groups', id), {
         totalAmount: increment(baseAmount),
         totalExpenses: increment(1),
         ...balanceDelta,
       })
+      await batch.commit()
+
+      try {
+        const receiptPath = await uploadReceipt(docRef.id)
+        if (receiptPath) await updateDoc(docRef, { receiptPath })
+      } catch (uploadErr) {
+        console.error('收據上傳失敗', uploadErr)
+        alert('支出已儲存，但收據上傳失敗：' + (uploadErr?.code || uploadErr?.message || '未知錯誤'))
+      }
 
       if (shareToLine && safeIsInClient()) {
         const payerName = payerLabel(basePayments, group.memberProfiles, '某人')
