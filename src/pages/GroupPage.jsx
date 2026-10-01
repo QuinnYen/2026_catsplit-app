@@ -124,7 +124,12 @@ const GroupPage = () => {
       ]
     })
     const bom = '﻿'
-    const csv = bom + [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    // 文字欄位以 = + - @ 開頭時，Excel 會當公式執行；前面補 ' 使其視為純文字（數字不處理）
+    const escapeCell = v => {
+      const s = String(v)
+      return `"${(typeof v === 'string' && /^[=+\-@\t\r]/.test(s) ? "'" + s : s).replace(/"/g, '""')}"`
+    }
+    const csv = bom + [header, ...rows].map(r => r.map(escapeCell).join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
