@@ -16,7 +16,7 @@ import { deleteFileByPath } from '../utils/storageCleanup'
 
 const GroupPage = () => {
   const { id } = useParams()
-  const { user, claimMember, forgetGuestName } = useApp()
+  const { user, claimMember } = useApp()
   const navigate = useNavigate()
   const [group, setGroup] = useState(null)
   const [expenses, setExpenses] = useState([])
@@ -428,17 +428,6 @@ const GroupPage = () => {
 
       {/* 操作按鈕 */}
       <div style={{ padding: '16px 16px 0' }}>
-        {user.guest && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff3ec', border: '0.5px solid #f0d5c0', borderRadius: 12, padding: '8px 12px', marginBottom: 12, fontSize: 12, color: '#b08060' }}>
-            <span style={{ flex: 1, minWidth: 0 }}>你目前是「{group.memberProfiles?.[user.uid]?.name}」（訪客）</span>
-            <button
-              onClick={() => { if (window.confirm('換成其他名字？\n這個名字的帳目不會受影響。')) forgetGuestName(id) }}
-              style={{ background: 'none', border: 'none', padding: 0, fontSize: 12, color: '#FF6B1A', textDecoration: 'underline', cursor: 'pointer', flexShrink: 0 }}
-            >
-              不是你？
-            </button>
-          </div>
-        )}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
           <button
             onClick={() => navigate(`/group/${id}/add`)}

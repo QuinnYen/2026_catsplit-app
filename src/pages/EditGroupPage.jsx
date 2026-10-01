@@ -13,7 +13,7 @@ import { deleteGroupFiles } from '../utils/storageCleanup'
 
 const EditGroupPage = () => {
   const { id } = useParams()
-  const { user } = useApp()
+  const { user, forgetGuestName } = useApp()
   const navigate = useNavigate()
   const [group, setGroup] = useState(null)
   const [name, setName] = useState('')
@@ -356,7 +356,22 @@ const EditGroupPage = () => {
                         <div style={{ fontSize: 11, color: '#FF8C42' }}>建立者</div>
                       )}
                       {profile?.placeholder && (
-                        <div style={{ fontSize: 11, color: '#b08060' }}>訪客名字，任何拿到連結的人都能選</div>
+                        <div style={{ fontSize: 11, color: '#b08060' }}>訪客名稱</div>
+                      )}
+                      {user?.guest && uid === user.uid && (
+                        <div style={{ fontSize: 11, color: '#b08060' }}>
+                          目前使用中，
+                          <button
+                            onClick={() => {
+                              if (!confirm('換成其他名字？\n這個名字的帳目不會受影響。')) return
+                              navigate(`/group/${id}`, { replace: true })
+                              forgetGuestName(id)
+                            }}
+                            style={{ background: 'none', border: 'none', padding: 0, fontSize: 11, color: '#FF6B1A', textDecoration: 'underline', cursor: 'pointer' }}
+                          >
+                            不是你？
+                          </button>
+                        </div>
                       )}
                     </div>
                     <button

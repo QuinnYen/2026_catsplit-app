@@ -84,7 +84,8 @@ const GuestJoin = ({ groupId, guests: guestsProp }) => {
 
       {error && <div style={{ fontSize: 13, color: '#c0392b', marginTop: 8 }}>{error}</div>}
       <div style={{ fontSize: 11, color: '#c4a882', lineHeight: 1.5, marginTop: 10 }}>
-        訪客名字任何拿到連結的人都能選用，最多 {MAX_GUEST_NAMES} 個群組；用 LINE 登入後就只有你能用
+        拿到連結的人都能用這個名字，所以名字不是專屬的。<br />
+        最多可加入 {MAX_GUEST_NAMES} 個群組，想綁定專屬身分就用 LINE 登入。
       </div>
     </div>
   )
