@@ -86,6 +86,9 @@ const ExpenseForm = ({
   baseCurrency,
   amount, setAmount,
   paidBy, setPaidBy,
+  multiPayer, setMultiPayer,
+  payerAmounts, setPayerAmounts,
+  payerTotal,
   payerExcluded, setPayerExcluded,
   splitType, setSplitType,
   subsetMembers, setSubsetMembers,
@@ -233,21 +236,62 @@ const ExpenseForm = ({
 
       {/* 誰付錢 */}
       <div style={cardStyle}>
-        <div style={labelStyle}>誰付錢</div>
-        <PayerSelect members={members} value={paidBy} onChange={setPaidBy} />
-        <button
-          onClick={() => setPayerExcluded(v => !v)}
-          style={{
-            marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', width: '100%',
-            background: payerExcluded ? '#fff3ec' : '#fff8f4',
-            outline: payerExcluded ? '1.5px solid #FF8C42' : '0.5px solid #f0d5c0',
-          }}
-        >
-          <Checkbox checked={payerExcluded} />
-          <span style={{ fontSize: 13, color: payerExcluded ? '#FF6B1A' : '#b08060', fontWeight: payerExcluded ? 500 : 400 }}>
-            付款人不參與分攤（純代墊）
-          </span>
-        </button>
+        <div style={{ ...labelStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>誰付錢</span>
+          <button
+            onClick={() => { setMultiPayer(v => !v); setPayerExcluded(false) }}
+            style={{
+              padding: '3px 10px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12,
+              ...(multiPayer ? chipActiveStyle : chipIdleStyle),
+            }}
+          >
+            多人付款
+          </button>
+        </div>
+        {multiPayer ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ fontSize: 11, color: '#b08060', marginBottom: 2 }}>輸入每人實際出的金額</div>
+            {members.map(([uid, profile]) => (
+              <div key={uid} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Avatar src={profile.avatar} name={profile.name} size={24} />
+                <span style={{ flex: 1, fontSize: 13, color: '#3d2b1f' }}>{profile.name}</span>
+                <div style={{ position: 'relative', width: 110 }}>
+                  <span style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#b08060', fontSize: 12 }}>
+                    {getCurrency(currency).symbol}
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={payerAmounts[uid] ?? ''}
+                    onChange={e => setPayerAmounts(prev => ({ ...prev, [uid]: e.target.value }))}
+                    placeholder="0"
+                    style={{ width: '100%', border: '0.5px solid #f0d5c0', borderRadius: 8, padding: '7px 8px 7px 34px', fontSize: 13, color: '#3d2b1f', outline: 'none', background: '#fff8f4' }}
+                  />
+                </div>
+              </div>
+            ))}
+            <div style={{ textAlign: 'right', fontSize: 12, fontWeight: 500, color: Math.abs(payerTotal - amountNum) < 0.01 ? '#4caf50' : '#FF6B1A' }}>
+              已填 {getCurrency(currency).symbol} {payerTotal.toFixed(0)} / {amount || 0}
+            </div>
+          </div>
+        ) : (
+          <>
+            <PayerSelect members={members} value={paidBy} onChange={setPaidBy} />
+            <button
+              onClick={() => setPayerExcluded(v => !v)}
+              style={{
+                marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', width: '100%',
+                background: payerExcluded ? '#fff3ec' : '#fff8f4',
+                outline: payerExcluded ? '1.5px solid #FF8C42' : '0.5px solid #f0d5c0',
+              }}
+            >
+              <Checkbox checked={payerExcluded} />
+              <span style={{ fontSize: 13, color: payerExcluded ? '#FF6B1A' : '#b08060', fontWeight: payerExcluded ? 500 : 400 }}>
+                付款人不參與分攤（純代墊）
+              </span>
+            </button>
+          </>
+        )}
       </div>
 
       {/* 分帳方式 */}

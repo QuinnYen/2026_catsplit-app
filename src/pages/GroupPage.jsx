@@ -10,7 +10,7 @@ import Avatar from '../components/Avatar'
 import GroupIcon from '../components/GroupIcon'
 import PawDecor from '../components/PawDecor'
 import { getCurrency } from '../config/currencies'
-import { computeMemberBalances, matchExpense } from '../utils/expenseHelpers'
+import { computeMemberBalances, matchExpense, payerLabel } from '../utils/expenseHelpers'
 import { deleteFileByPath } from '../utils/storageCleanup'
 
 const GroupPage = () => {
@@ -108,7 +108,9 @@ const GroupPage = () => {
       const date = e.createdAt?.toDate
         ? e.createdAt.toDate().toLocaleDateString('zh-TW')
         : ''
-      const payer = group.memberProfiles?.[e.paidBy]?.name || e.paidBy
+      const payer = Object.entries(e.payments || {})
+        .map(([uid, amt]) => `${group.memberProfiles?.[uid]?.name || uid}(${amt})`)
+        .join('; ')
       const splitTypes = { equal: '均分', subset: '部分均分', shares: '份數', percentage: '百分比', custom: '自訂' }
       const splitType = splitTypes[e.splitType] || e.splitType || ''
       return [
@@ -558,7 +560,7 @@ const GroupPage = () => {
                               </div>
                               <div style={{ fontSize: 12, color: '#b08060', display: 'flex' }}>
                                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {group.memberProfiles?.[item.paidBy]?.name || '未知'}
+                                  {payerLabel(item.payments, group.memberProfiles)}
                                 </span>
                                 <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>&nbsp;付款</span>
                               </div>

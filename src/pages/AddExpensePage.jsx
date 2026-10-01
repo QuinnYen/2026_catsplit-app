@@ -9,7 +9,7 @@ import TabBar from '../components/TabBar'
 import ExpenseForm from '../components/ExpenseForm'
 import PawDecor from '../components/PawDecor'
 import useExchangeRate from '../hooks/useExchangeRate'
-import { todayStr, computeSplits, applyExchangeRate } from '../utils/expenseHelpers'
+import { todayStr, computeSplits, applyExchangeRate, buildPayments, payerLabel } from '../utils/expenseHelpers'
 import { getCurrency } from '../config/currencies'
 import imageCompression from 'browser-image-compression'
 
@@ -25,6 +25,8 @@ const AddExpensePage = () => {
   const [isEditingCategory, setIsEditingCategory] = useState(false)
   const [amount, setAmount] = useState('')
   const [paidBy, setPaidBy] = useState(user?.uid)
+  const [multiPayer, setMultiPayer] = useState(false)
+  const [payerAmounts, setPayerAmounts] = useState({})
   const [payerExcluded, setPayerExcluded] = useState(false)
   const [splitType, setSplitType] = useState('equal')
   const [customAmounts, setCustomAmounts] = useState({})
@@ -71,6 +73,7 @@ const AddExpensePage = () => {
   const sharesTotal = Object.values(shares).reduce((s, v) => s + (parseFloat(v) || 0), 0)
   const percentageTotal = Object.values(percentages).reduce((s, v) => s + (parseFloat(v) || 0), 0)
   const customTotal = Object.values(customAmounts).reduce((s, v) => s + (parseFloat(v) || 0), 0)
+  const payerTotal = Object.values(payerAmounts).reduce((s, v) => s + (parseFloat(v) || 0), 0)
 
   const effectiveUids = (() => {
     let uids = members.map(([uid]) => uid)
@@ -83,6 +86,7 @@ const AddExpensePage = () => {
     if (!title.trim()) return false
     if (!amount || parseFloat(amount) <= 0) return false
     if (currency !== baseCurrency && (rateLoading || !(exchangeRate > 0))) return false
+    if (multiPayer && Math.abs(payerTotal - parseFloat(amount)) > 0.01) return false
     if (splitType === 'custom' && Math.abs(customTotal - parseFloat(amount)) > 0.01) return false
     if (splitType === 'percentage' && Math.abs(percentageTotal - 100) > 0.01) return false
     if (splitType === 'subset') {
@@ -109,7 +113,8 @@ const AddExpensePage = () => {
     try {
       const totalAmount = parseFloat(amount)
       const splits = computeSplits({ splitType, totalAmount, effectiveUids, allMemberEntries: members, shares, percentages, customAmounts })
-      const { rate, baseAmount, baseSplits } = applyExchangeRate({ totalAmount, splits, currency, baseCurrency, exchangeRate, paidBy })
+      const payments = buildPayments({ multiPayer, paidBy, payerAmounts, totalAmount })
+      const { rate, baseAmount, baseSplits, basePayments } = applyExchangeRate({ totalAmount, splits, payments, currency, baseCurrency, exchangeRate })
 
       const docRef = await addDoc(collection(db, 'groups', id, 'expenses'), {
         title: title.trim(),
@@ -118,8 +123,7 @@ const AddExpensePage = () => {
         originalAmount: totalAmount,
         exchangeRate: rate,
         amount: baseAmount,
-        paidBy,
-        payerExcluded,
+        payments: basePayments,
         splitType,
         splits: baseSplits,
         ...(splitType === 'shares' && { shares }),
@@ -137,7 +141,7 @@ const AddExpensePage = () => {
       }
 
       // 付款人可能也在分攤名單內，需先合併再寫入，避免同一個 key 互相覆蓋
-      const netDelta = { [paidBy]: baseAmount }
+      const netDelta = { ...basePayments }
       Object.entries(baseSplits).forEach(([uid, amt]) => {
         netDelta[uid] = (netDelta[uid] || 0) - amt
       })
@@ -152,7 +156,7 @@ const AddExpensePage = () => {
       })
 
       if (shareToLine && safeIsInClient()) {
-        const payerName = group.memberProfiles?.[paidBy]?.name || '某人'
+        const payerName = payerLabel(basePayments, group.memberProfiles, '某人')
         const currencyObj = getCurrency(currency)
         const splitCount = effectiveUids.length
         const perPerson = splitCount > 0 ? Math.round(parseFloat(amount) / splitCount) : 0
@@ -247,6 +251,9 @@ const AddExpensePage = () => {
           baseCurrency={baseCurrency}
           amount={amount} setAmount={setAmount}
           paidBy={paidBy} setPaidBy={setPaidBy}
+          multiPayer={multiPayer} setMultiPayer={setMultiPayer}
+          payerAmounts={payerAmounts} setPayerAmounts={setPayerAmounts}
+          payerTotal={payerTotal}
           payerExcluded={payerExcluded} setPayerExcluded={setPayerExcluded}
           splitType={splitType} setSplitType={setSplitType}
           subsetMembers={subsetMembers} setSubsetMembers={setSubsetMembers}

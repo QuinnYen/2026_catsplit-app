@@ -10,7 +10,7 @@ import ExpenseForm from '../components/ExpenseForm'
 import { DEFAULT_CATEGORIES } from '../config/expenseForm'
 import PawDecor from '../components/PawDecor'
 import useExchangeRate from '../hooks/useExchangeRate'
-import { toLocalDateStr, computeSplits, applyExchangeRate, computeMemberBalances } from '../utils/expenseHelpers'
+import { toLocalDateStr, computeSplits, applyExchangeRate, computeMemberBalances, buildPayments, primaryPayer } from '../utils/expenseHelpers'
 import { deleteFileByPath } from '../utils/storageCleanup'
 
 const EditExpensePage = () => {
@@ -25,6 +25,8 @@ const EditExpensePage = () => {
   const [isEditingCategory, setIsEditingCategory] = useState(false)
   const [amount, setAmount] = useState('')
   const [paidBy, setPaidBy] = useState('')
+  const [multiPayer, setMultiPayer] = useState(false)
+  const [payerAmounts, setPayerAmounts] = useState({})
   const [payerExcluded, setPayerExcluded] = useState(false)
   const [splitType, setSplitType] = useState('equal')
   const [customAmounts, setCustomAmounts] = useState({})
@@ -64,8 +66,18 @@ const EditExpensePage = () => {
       setAmount(String(expense.originalAmount ?? expense.amount))
       setCurrency(expense.currency || base)
       setSavedRate({ currency: expense.currency || base, rate: expense.exchangeRate ?? 1 })
-      setPaidBy(expense.paidBy)
-      setPayerExcluded(expense.payerExcluded || false)
+      const payments = expense.payments || {}
+      const payerUids = Object.keys(payments)
+      const rate = expense.exchangeRate ?? 1
+      if (payerUids.length > 1) {
+        setMultiPayer(true)
+        setPayerAmounts(Object.fromEntries(payerUids.map(uid => [uid, String(parseFloat((payments[uid] / rate).toFixed(2)))])))
+        setPaidBy(primaryPayer(payments))
+      } else {
+        setPaidBy(payerUids[0])
+        // 單一付款人沒有分到錢，代表當初勾了「不參與分攤」
+        setPayerExcluded(!(expense.splits?.[payerUids[0]] > 0))
+      }
       setSplitType(expense.splitType || 'equal')
 
       const dateTs = expense.createdAt?.toDate?.()
@@ -127,6 +139,7 @@ const EditExpensePage = () => {
   const sharesTotal = Object.values(shares).reduce((s, v) => s + (parseFloat(v) || 0), 0)
   const percentageTotal = Object.values(percentages).reduce((s, v) => s + (parseFloat(v) || 0), 0)
   const customTotal = Object.values(customAmounts).reduce((s, v) => s + (parseFloat(v) || 0), 0)
+  const payerTotal = Object.values(payerAmounts).reduce((s, v) => s + (parseFloat(v) || 0), 0)
 
   const effectiveUids = (() => {
     let uids = members.map(([uid]) => uid)
@@ -139,6 +152,7 @@ const EditExpensePage = () => {
     if (!title.trim()) return false
     if (!amount || parseFloat(amount) <= 0) return false
     if (currency !== baseCurrency && (rateLoading || !(exchangeRate > 0))) return false
+    if (multiPayer && Math.abs(payerTotal - parseFloat(amount)) > 0.01) return false
     if (splitType === 'custom' && Math.abs(customTotal - parseFloat(amount)) > 0.01) return false
     if (splitType === 'percentage' && Math.abs(percentageTotal - 100) > 0.01) return false
     if (splitType === 'subset') {
@@ -182,7 +196,8 @@ const EditExpensePage = () => {
     try {
       const totalAmount = parseFloat(amount)
       const splits = computeSplits({ splitType, totalAmount, effectiveUids, allMemberEntries: members, shares, percentages, customAmounts })
-      const { rate, baseAmount, baseSplits } = applyExchangeRate({ totalAmount, splits, currency, baseCurrency, exchangeRate, paidBy })
+      const payments = buildPayments({ multiPayer, paidBy, payerAmounts, totalAmount })
+      const { rate, baseAmount, baseSplits, basePayments } = applyExchangeRate({ totalAmount, splits, payments, currency, baseCurrency, exchangeRate })
 
       const receiptUpdate = await handleReceiptUpdate()
       await updateDoc(doc(db, 'groups', id, 'expenses', expenseId), {
@@ -192,8 +207,7 @@ const EditExpensePage = () => {
         originalAmount: totalAmount,
         exchangeRate: rate,
         amount: baseAmount,
-        paidBy,
-        payerExcluded,
+        payments: basePayments,
         splitType,
         splits: baseSplits,
         ...(splitType === 'shares' && { shares }),
@@ -257,6 +271,9 @@ const EditExpensePage = () => {
           baseCurrency={baseCurrency}
           amount={amount} setAmount={setAmount}
           paidBy={paidBy} setPaidBy={setPaidBy}
+          multiPayer={multiPayer} setMultiPayer={setMultiPayer}
+          payerAmounts={payerAmounts} setPayerAmounts={setPayerAmounts}
+          payerTotal={payerTotal}
           payerExcluded={payerExcluded} setPayerExcluded={setPayerExcluded}
           splitType={splitType} setSplitType={setSplitType}
           subsetMembers={subsetMembers} setSubsetMembers={setSubsetMembers}

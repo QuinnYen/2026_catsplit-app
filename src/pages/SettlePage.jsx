@@ -47,7 +47,9 @@ const SettlePage = () => {
       groupData.members.forEach(uid => { balance[uid] = 0 })
 
       expensesData.forEach(expense => {
-        balance[expense.paidBy] = (balance[expense.paidBy] || 0) + expense.amount
+        Object.entries(expense.payments || {}).forEach(([uid, amt]) => {
+          balance[uid] = (balance[uid] || 0) + amt
+        })
         Object.entries(expense.splits || {}).forEach(([uid, amt]) => {
           balance[uid] = (balance[uid] || 0) - amt
         })
@@ -181,7 +183,7 @@ const SettlePage = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {group.members.map(uid => {
               const profile = group.memberProfiles?.[uid]
-              const paid = expenses.filter(e => e.paidBy === uid).reduce((sum, e) => sum + e.amount, 0)
+              const paid = expenses.reduce((sum, e) => sum + (e.payments?.[uid] || 0), 0)
               const shouldPay = expenses.reduce((sum, e) => sum + (e.splits?.[uid] || 0), 0)
               const transferred = settledRecords
                 .filter(s => s.from === uid).reduce((sum, s) => sum + s.amount, 0)

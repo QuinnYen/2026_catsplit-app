@@ -7,7 +7,7 @@ import { useApp } from '../context/AppContext'
 import Avatar from '../components/Avatar'
 import PawDecor from '../components/PawDecor'
 import { getCurrency } from '../config/currencies'
-import { toLocalDateStr } from '../utils/expenseHelpers'
+import { toLocalDateStr, payerLabel } from '../utils/expenseHelpers'
 import { useStorageImage } from '../hooks/useStorageImage'
 
 const SPLIT_LABEL = {
@@ -50,6 +50,8 @@ const ExpenseDetailPage = () => {
   const baseCurr = getCurrency(group.baseCurrency || 'TWD')
   const expCurr = getCurrency(expense.currency || group.baseCurrency || 'TWD')
   const hasFx = expense.currency && expense.currency !== (group.baseCurrency || 'TWD')
+  const payerEntries = Object.entries(expense.payments || {})
+  const isPayer = user?.uid in (expense.payments || {})
 
   const dateStr = expense.createdAt?.toDate
     ? toLocalDateStr(expense.createdAt.toDate())
@@ -110,20 +112,35 @@ const ExpenseDetailPage = () => {
           </div>
 
           {/* 付款人 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Avatar
-              src={group.memberProfiles?.[expense.paidBy]?.avatar}
-              name={group.memberProfiles?.[expense.paidBy]?.name}
-              size={32}
-            />
-            <div>
+          {payerEntries.length > 1 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ fontSize: 12, color: '#b08060' }}>由誰付款</div>
-              <div style={{ fontSize: 14, fontWeight: 500, color: '#3d2b1f' }}>
-                {group.memberProfiles?.[expense.paidBy]?.name}
-                {expense.payerExcluded && <span style={{ fontSize: 11, color: '#b08060', fontWeight: 400 }}> （不參與分攤）</span>}
+              {payerEntries.map(([uid, amt]) => (
+                <div key={uid} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Avatar src={group.memberProfiles?.[uid]?.avatar} name={group.memberProfiles?.[uid]?.name} size={28} />
+                  <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: '#3d2b1f' }}>{group.memberProfiles?.[uid]?.name}</span>
+                  <span style={{ fontSize: 14, color: '#FF6B1A', fontWeight: 500 }}>
+                    {expCurr.symbol} {parseFloat((hasFx && expense.exchangeRate ? amt / expense.exchangeRate : amt).toFixed(2)).toLocaleString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Avatar
+                src={group.memberProfiles?.[payerEntries[0]?.[0]]?.avatar}
+                name={group.memberProfiles?.[payerEntries[0]?.[0]]?.name}
+                size={32}
+              />
+              <div>
+                <div style={{ fontSize: 12, color: '#b08060' }}>由誰付款</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: '#3d2b1f' }}>
+                  {payerLabel(expense.payments, group.memberProfiles)}
+                  {!(expense.splits?.[payerEntries[0]?.[0]] > 0) && <span style={{ fontSize: 11, color: '#b08060', fontWeight: 400 }}> （不參與分攤）</span>}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* 分攤明細 */}
@@ -194,12 +211,12 @@ const ExpenseDetailPage = () => {
 
         {/* 我的份額卡 */}
         {expense.splits?.[user?.uid] != null && (
-          <div style={{ background: user?.uid === expense.paidBy ? '#f0faf0' : '#fff3ec', borderRadius: 16, border: `0.5px solid ${user?.uid === expense.paidBy ? '#c8e6c9' : '#f0d5c0'}`, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ background: isPayer ? '#f0faf0' : '#fff3ec', borderRadius: 16, border: `0.5px solid ${isPayer ? '#c8e6c9' : '#f0d5c0'}`, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ fontSize: 12, color: user?.uid === expense.paidBy ? '#4caf50' : '#b08060', marginBottom: 2 }}>
-                {user?.uid === expense.paidBy ? '你付款，待收回' : '你應付'}
+              <div style={{ fontSize: 12, color: isPayer ? '#4caf50' : '#b08060', marginBottom: 2 }}>
+                {isPayer ? '你付款，待收回' : '你應付'}
               </div>
-              <div style={{ fontSize: 20, fontWeight: 600, color: user?.uid === expense.paidBy ? '#2e7d32' : '#FF6B1A' }}>
+              <div style={{ fontSize: 20, fontWeight: 600, color: isPayer ? '#2e7d32' : '#FF6B1A' }}>
                 {expCurr.symbol} {parseFloat(
                   hasFx && expense.exchangeRate
                     ? (expense.splits[user.uid] / expense.exchangeRate).toFixed(2)
@@ -207,7 +224,7 @@ const ExpenseDetailPage = () => {
                 ).toLocaleString()}
               </div>
             </div>
-            <div>{user?.uid === expense.paidBy ? <HandCoins size={32} color="#4caf50" /> : <Banknote size={32} color="#FF6B1A" />}</div>
+            <div>{isPayer ? <HandCoins size={32} color="#4caf50" /> : <Banknote size={32} color="#FF6B1A" />}</div>
           </div>
         )}
 

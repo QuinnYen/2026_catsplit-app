@@ -43,7 +43,9 @@ const StatsPage = () => {
     expenses.forEach(e => {
       const cat = e.category || '其他'
       byCategory[cat] = (byCategory[cat] || 0) + e.amount
-      byPayer[e.paidBy] = (byPayer[e.paidBy] || 0) + e.amount
+      Object.entries(e.payments || {}).forEach(([uid, amt]) => {
+        byPayer[uid] = (byPayer[uid] || 0) + amt
+      })
       const d = e.createdAt?.toDate?.()
       if (d) {
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
